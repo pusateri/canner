@@ -23,6 +23,7 @@
 
 from canner.taglib import *
 import re
+import IPy
 
 tagPatterns = [
     ('system/domain-name',                    'domain name',       text),
@@ -33,7 +34,6 @@ tagPatterns = [
     ('system/ntp/server/name',                'NTP server',        text),
     ('system/login/user/name',                'user',              text),
     ('snmp/community/name',                   'SNMP community',    text),
-    # ('protocols/*',                           'routing protocol',  tag),
 ]
 
 ot = output_tag
@@ -141,12 +141,31 @@ def outputProtocols(top, fn):
         protocolTag = "routing protocol--%s" % protocol
         for groupElem in protocolElem.xpath("group"):
             nameElem = groupElem.xpath("name")[0]
-            bgpGroupTag = "%s group--%s" % (protocol.lower(), nameElem.text)
+            bgpGroupTag = "%s group--%s %s" % (protocol, snapshotDevice, nameElem.text)
+            ot(fn, nameElem.sourceline, bgpGroupTag, context=snapshotDeviceTag)
             for neighborNameElem in groupElem.xpath("neighbor/name"):
-                peerTag = "%s peer--%s" % (protocol.lower(), neighborNameElem.text)
+                address = IPy.IP(neighborNameElem.text)
+                if address.version() == 4:
+                    af = 'IPv4'
+                elif address.version() == 6:
+                    af = 'IPv6'
+                else:
+                    break
+                addressTag = "%s interface address--%s" % (af, neighborNameElem.text)
+                peerTag = "%s peer--%s" % (protocol, neighborNameElem.text)
+                ot(fn, neighborNameElem.sourceline, peerTag, context=addressTag)
                 ot(fn, neighborNameElem.sourceline, peerTag, context=bgpGroupTag)
-            ot(fn, nameElem.sourceline, bgpGroupTag, context=protocolTag)
-        ot(fn, protocolElem.sourceline, protocolTag, context=snapshotDeviceTag)
+                ot(fn, protocolElem.sourceline, protocolTag, context=peerTag)
+                # determine the AS number, if the peer doesn't have its own, use the groups
+                asnElemList = neighborNameElem.xpath("peer-as")
+                if len(asnElemList) == 0:
+                    asnElemList = groupElem.xpath("peer-as")
+                if len(asnElemList) > 0:
+                    asnElem = asnElemList[0]
+                    asnTag = "autonomous system--%s" % asnElem.text
+                    ot(fn, asnElem.sourceline, asnTag, context=peerTag,
+                       sortName='%010d' % int(asnElem.text))
+            
         
     protocol = "MSDP"
     protocolElemList = top.xpath("protocols/%s" % protocol.lower())
@@ -155,12 +174,16 @@ def outputProtocols(top, fn):
         protocolTag = "routing protocol--%s" % protocol
         for groupElem in protocolElem.xpath("group"):
             nameElem = groupElem.xpath("name")[0]
-            bgpGroupTag = "%s group--%s" % (protocol.lower(), nameElem.text)
+            msdpGroupTag = "%s group--%s %s" % (protocol, snapshotDevice, nameElem.text)
             for peerNameElem in groupElem.xpath("peer/name"):
-                peerTag = "%s peer--%s" % (protocol.lower(), peerNameElem.text)
-                ot(fn, peerNameElem.sourceline, peerTag, context=bgpGroupTag)
-            ot(fn, nameElem.sourceline, bgpGroupTag, context=protocolTag)
-        ot(fn, protocolElem.sourceline, protocolTag, context=snapshotDeviceTag)
+                address = IPy.IP(peerNameElem.text)
+                if address.version() == 4:
+                    addressTag = "IPv4 interface address--%s" % peerNameElem.text
+                    peerTag = "%s peer--%s" % (protocol, peerNameElem.text)
+                    ot(fn, peerNameElem.sourceline, peerTag, context=addressTag)
+                    ot(fn, peerNameElem.sourceline, peerTag, context=msdpGroupTag)
+                    ot(fn, protocolElem.sourceline, protocolTag, context=peerTag)
+            ot(fn, nameElem.sourceline, msdpGroupTag, context=snapshotDeviceTag)
     
     ospfVersionDict = {'OSPF':'OSPF', 'OSPF3':'OSPFv3'}
     for ospfVersion in ospfVersionDict.keys():
