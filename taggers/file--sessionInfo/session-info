@@ -1,0 +1,53 @@
+#!/usr/bin/env python
+
+#
+# Copyright 2007 !j Incorporated
+#
+# This file is part of Canner.
+#
+# Canner is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Canner is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Canner.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+# $Id$
+
+import os, sys
+from canner import taglib
+from datetime import datetime
+
+def ot(kind, name, properties=None, **kw):
+    qname = "%s--%s" % (kind, name)
+    taglib.output_tag(sys.argv[1], 0, qname, properties, **kw)
+    return qname
+
+device    = os.environ["SESSION_DEVICE"]
+id        = os.environ["SESSION_ID"]
+osName    = os.environ["SESSION_OS_NAME"]
+timestamp = os.environ["SESSION_TIMESTAMP"]
+user      = os.environ["SESSION_USER"]
+
+formatTS = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S").strftime
+ts = formatTS("%Y-%m-%dT%H:%M:%S")
+tsDisplay = formatTS("%Y-%m-%d %H:%M")
+
+sessTag = ot("snapshot ID", id, 
+             sortName="%s @ %s" % (device, ts),
+             displayName="%s @ %s" % (device, tsDisplay))
+devTag = ot("snapshot device", device, context=sessTag)
+ot("snapshot user", user, context=sessTag)
+ot("OS", osName, context=devTag)
+
+t = ot("snapshot timestamp", ts, context=sessTag, displayName=tsDisplay)
+t = ot("snapshot date", formatTS("%Y-%m-%d"), context=t)
+t = ot("snapshot month", formatTS("%Y-%m"), context=t)
+t = ot("snapshot year", formatTS("%Y"), context=t)

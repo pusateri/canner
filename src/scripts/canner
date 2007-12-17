@@ -1,0 +1,227 @@
+#!/usr/bin/python
+
+#
+# Copyright 2007 !j Incorporated
+#
+# This file is part of Canner.
+#
+# Canner is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Canner is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Canner.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+# $Id$
+
+from __future__ import with_statement
+
+import os
+import signal
+import sys
+import logging
+import shutil
+import datetime
+from canner.Session import Session, SessionError
+from canner.Canner import Canner
+from optparse import OptionParser
+
+class CannerError(Exception):
+    pass
+
+
+def handleOptions():
+    usage = 'usage: %prog [options] device...'
+    parser = OptionParser(usage)
+
+    parser.set_defaults(verbosity=20)
+    parser.add_option("-q", "--quiet", dest="verbosity", 
+                      action="store_const", const=30),
+    parser.add_option("-v", "--verbose", dest="verbosity", 
+                      action="store_const", const=10),
+                      
+    parser.set_defaults(force=False)
+    parser.add_option("-f", "--force", dest="force",
+                      action="store_true",
+                      help="overwrite snapshot if one already exists")
+                      
+    parser.add_option('-l', '--log', dest='logSession', action='store_true', 
+                      default=False, help='enable logging')
+
+    parser.set_defaults(retag=False)
+    parser.add_option('-c', '--connect', dest='connectCommand',
+                      help='command used to connect to the device')
+    parser.add_option('-r', '--retag', dest='retag',
+                      action="store_true",
+                      help="retag an existing snapshot")
+                                            
+    parser.set_defaults(organize=False)
+    parser.add_option('-o', '--organize', dest='organize', action='store_true',
+                      help='automatically orgainze the snapshot')
+                      
+    parser.add_option("-n", "--name", dest="snapname", action="store",
+                      help="filename to use for the snapshot")
+                      
+    parser.add_option('-t', '--taggersdir', dest='taggersDir',
+                      help='load taggers from DIR', metavar='DIR')
+    parser.add_option('-s', '--snapshotsdir', dest='snapshotsDir',
+                      help='store snapshot in DIR', metavar='DIR')
+
+    parser.add_option('-u', '--user', dest='user',
+                      help='login USER')
+    parser.add_option('-p', '--password', dest='password',
+                      help='login PASSWORD')
+    parser.add_option('-e', '--exec-password', dest='execPassword', 
+                      help='exec PASSWORD')
+                      
+    parser.set_defaults(timeout=-1)
+    parser.add_option("-T", "--timeout", dest="timeout", type="int")
+
+    (options, args) = parser.parse_args()
+
+    if options.verbosity >= logging.INFO:
+        format = "%(levelname)-8s %(message)s"
+    else:
+        format = "%(asctime)s %(levelname)-8s %(message)s"
+    logging.basicConfig(level=options.verbosity, format=format)
+
+    if options.snapname:
+        if options.organize:
+            paser.error("a snapshot name cannot be specified in organize mode")
+        if options.retag:
+            paser.error("a snapshot name cannot be specified in retag mode")
+        if len(args) == 0:
+            parser.error("a device is required")
+        if len(args) > 1:
+            parser.error("only one device can be specified with a snapshot name")
+    elif len(args) < 1:
+        thing = "snapshot" if options.retag else "device"
+        parser.error("at least one %s is required" % thing)
+    
+    if not options.taggersDir:
+        options.taggersDir = os.environ.get('TAGGERS_DIR', None)
+    if not options.taggersDir:
+        dir = os.path.expanduser('~/Taggers')
+        if os.path.isdir(dir):
+            options.taggersDir = dir
+    if not options.taggersDir:
+        myDir = os.path.dirname(os.path.abspath(__file__))
+        options.taggersDir = os.path.normpath(os.path.join(myDir, '../..', 
+                                                           'taggers'))
+    if not options.taggersDir:
+        dir = os.path.expanduser('/usr/local/share/netCannery/taggers')
+        if os.path.isdir(dir):
+            options.taggersDir = dir
+    if not options.taggersDir:
+        parser.error('could not determine taggers directory')
+
+    if options.organize:
+        if not options.snapshotsDir:
+            options.snapshotsDir = os.environ.get('SNAPSHOTS_DIR', None)
+        if not options.snapshotsDir:
+            nc = os.path.expanduser('~/Library/Application Support/netCannery')
+            if os.path.isdir(nc):
+                options.snapshotsDir = os.path.join(nc, 'Snapshots', 
+                                                        'Canned Locally')
+                if not os.path.isdir(options.snapshotsDir):
+                    os.makedirs(options.snapshotsDir)
+        if not options.snapshotsDir:
+            dir = os.path.expanduser('~/Snapshots')
+            if os.path.isdir(dir):
+                options.snapshotsDir = dir
+        if not options.snapshotsDir:
+            parser.error('could not determine snapshots directory')
+    else:
+        if options.snapshotsDir:
+            parser.error('snapshots dir invalid without --organize')
+    
+    return options, args
+
+
+def retag(options, snapshots):
+    startingDir = os.getcwd()
+    for pkg in snapshots:
+        pkgdir = os.path.join(startingDir, pkg)
+        if not os.path.isdir(pkgdir):
+            raise CannerError("snapshot directory '%s' not found" % pkgdir)
+        os.chdir(os.path.join(startingDir, pkg))
+        if os.path.exists("Contents"):
+            shutil.rmtree("Contents")
+        canner = Canner(options.taggersDir)
+        canner.run()
+    
+
+def can(options, devices):
+    snapshotsDir = options.snapshotsDir or os.getcwd()
+
+    for device in devices:
+        timestamp = datetime.datetime.utcnow()
+
+        os.chdir(snapshotsDir)
+    
+        if options.snapname:
+            pkg = options.snapname
+        elif options.organize:
+            ts = timestamp.strftime
+            basedir = ts('%Y/%m/%d')
+            if not os.path.isdir(basedir):
+                os.makedirs(basedir)
+            os.chdir(basedir)
+            pkg = '%s--%s.netcan' % (device, ts('%Y-%m-%d-%H-%M-%S'))
+        else:
+            pkg = "%s.netcan" % device
+
+        if os.path.isdir(pkg) and not options.force:
+            raise CannerError("snapshot directory '%s' already exists" % pkg)
+        
+        if os.path.exists(pkg):
+            shutil.rmtree(pkg)
+        os.mkdir(pkg)
+        os.chdir(pkg)
+
+        session = Session(device, 
+                          user=options.user, 
+                          password=options.password, 
+                          execPassword=options.execPassword, 
+                          command=options.connectCommand,
+                          shouldLog=options.logSession)
+        if options.timeout:
+            session.timeout = options.timeout
+    
+        try:
+            session.start()
+            canner = Canner(options.taggersDir, session, timestamp)
+            canner.run()
+        finally:
+            session.close()
+
+        
+def main():
+    def forceQuit(signum, frame):
+        raise CannerError("caught signal %d" % signum)
+    signal.signal(signal.SIGTERM, forceQuit)
+    
+    try:
+        options, args = handleOptions()
+        if options.retag:
+            return retag(options, args)
+        else:
+            return can(options, args)
+
+    except (CannerError, SessionError), e:
+        logging.error(e)
+        sys.exit(1)
+        
+    except KeyboardInterrupt:
+        sys.exit(1)
+            
+if __name__ == '__main__':
+    main()
+

@@ -1,0 +1,158 @@
+#!/usr/bin/env python
+
+#
+# Copyright 2007 !j Incorporated
+#
+# This file is part of Canner.
+#
+# Canner is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Canner is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Canner.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+# $Id$
+
+from __future__ import with_statement
+import os, re, sys, socket
+from itertools import count, izip
+from canner import taglib
+
+
+def rwhois_query(address):
+    queue = [
+        ("rwhois.arin.net", 4321),
+        ]
+    result = ""
+
+    while queue:
+        host, port = queue.pop()
+
+        s = None
+        for res in socket.getaddrinfo(host, port, socket.AF_UNSPEC,
+                                      socket.SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            try:
+                s = socket.socket(af, socktype, proto)
+            except socket.error:
+                s = None
+                continue
+            try:
+                s.connect(sa)
+            except socket.error:
+                s.close()
+                s = None
+                continue
+            break
+        if s is None:
+            print "# could not connect to rwhois server '%s'" % host
+            continue
+
+        s.send(address + "\n")
+        res = ""
+        while True:
+            data = s.recv(4096)
+            if not data: break
+            res += data
+        s.close()
+        result += res
+
+        for m in re.finditer(r"(?m)^%referral rwhois://(.*?):(\d+)/", res):
+            queue.append(m.groups())
+
+    return result
+
+
+def extract_tags(context, src, filename):
+    def ot(line, qname, properties=None, **kw):
+        taglib.output_tag(filename, line, qname, properties, **kw)
+
+    attrs = {}
+    in_context = False
+    for linenum, line in src:
+        line = line.strip()
+
+        if line.startswith("#TAG: "):
+            if in_context:
+                return True
+            if line == "#TAG: " + context:
+                in_context = True
+
+        if not in_context:
+            continue
+
+        if line == "":
+            if not attrs:
+                continue
+
+            ln, val = attrs["ID"]
+            id_tag = "registered network--" + val
+            ot(ln, id_tag, context=context)
+
+            ln, val = attrs["IP-Network"]
+            net, props = taglib.ip_subnet(val)
+            subnet_tag = "registered network subnet--" + val
+            ot(ln, subnet_tag, props, context=id_tag)
+
+            ln, val = attrs.get("Org-Name", (None, None))
+            if not val:
+                ln, val = attrs.get("Organization", (None, None))
+            if val:
+                ot(ln, "registered organization--" + val, context=id_tag)
+
+            attrs = {}
+            continue
+
+        elif line.startswith("#"):
+            pass
+
+        elif line.startswith("%"):
+            pass
+
+        else:
+            m = re.match(r"^network:(.*?)(;.)?:(.*?)$", line)
+            if not m:
+                print "# unexpected line: %r" % line
+            else:
+                name, type, value = m.groups()
+                attrs[name] = (linenum, value)
+
+    return in_context
+
+
+def main():
+    tag = os.environ["TAG"]
+
+    m = re.match(r"IPv4 subnet--(.*)/\d+", tag)
+    if not m:
+        print >>sys.stderr, "could not get subnet from tag"
+        sys.exit(1)
+    subnet = m.group(1)
+
+    filename = "rwhois.log"
+    line_counter = count(1)
+
+    found = False
+    if os.path.exists(filename):
+        with open(filename) as f:
+            found = extract_tags(tag, izip(line_counter, f), filename)
+    if not found:
+        print "# result not found -- querying rwhois"
+        result = "#TAG: " + tag + "\n" + rwhois_query(subnet)
+        with open(filename, "a") as f:
+            f.write(result)
+        line_counter = count(line_counter.next() - 1)
+        extract_tags(tag, izip(line_counter, result.splitlines()), filename)
+        taglib.output_tag(filename, 0, "file--" + filename)
+
+
+if __name__ == "__main__":
+    main()
