@@ -133,11 +133,40 @@ def outputInterfaceTags(top, fn):
                 outputAddresses(inet6FamilyElem, "IPv6")
 
 def outputProtocols(top, fn):
+    
+    protocol = "BGP"
+    protocolElemList = top.xpath("protocols/%s" % protocol.lower())
+    if protocolElemList:
+        protocolElem = protocolElemList[0]
+        protocolTag = "routing protocol--%s" % protocol
+        for groupElem in protocolElem.xpath("group"):
+            nameElem = groupElem.xpath("name")[0]
+            bgpGroupTag = "%s group--%s" % (protocol.lower(), nameElem.text)
+            for neighborNameElem in groupElem.xpath("neighbor/name"):
+                peerTag = "%s peer--%s" % (protocol.lower(), neighborNameElem.text)
+                ot(fn, neighborNameElem.sourceline, peerTag, context=bgpGroupTag)
+            ot(fn, nameElem.sourceline, bgpGroupTag, context=protocolTag)
+        ot(fn, protocolElem.sourceline, protocolTag, context=snapshotDeviceTag)
+        
+    protocol = "MSDP"
+    protocolElemList = top.xpath("protocols/%s" % protocol.lower())
+    if protocolElemList:
+        protocolElem = protocolElemList[0]
+        protocolTag = "routing protocol--%s" % protocol
+        for groupElem in protocolElem.xpath("group"):
+            nameElem = groupElem.xpath("name")[0]
+            bgpGroupTag = "%s group--%s" % (protocol.lower(), nameElem.text)
+            for peerNameElem in groupElem.xpath("peer/name"):
+                peerTag = "%s peer--%s" % (protocol.lower(), peerNameElem.text)
+                ot(fn, peerNameElem.sourceline, peerTag, context=bgpGroupTag)
+            ot(fn, nameElem.sourceline, bgpGroupTag, context=protocolTag)
+        ot(fn, protocolElem.sourceline, protocolTag, context=snapshotDeviceTag)
+    
     ospfVersionDict = {'OSPF':'OSPF', 'OSPF3':'OSPFv3'}
     for ospfVersion in ospfVersionDict.keys():
         ospfElemList = top.xpath("protocols/%s" % ospfVersion.lower())
         if not ospfElemList:
-            return
+            break
         ospfElem = ospfElemList[0]
         ospfVersionLabel = ospfVersionDict[ospfVersion]
         protocolTag = "routing protocol--%s" % ospfVersionLabel
@@ -153,10 +182,23 @@ def outputProtocols(top, fn):
                     ot(fn, interfaceNameElem.sourceline, ospfAreaTag, context=tag)
             ot(fn, nameElem.sourceline, protocolTag, context=ospfAreaTag)
 
+    protocol = "PIM"
+    protocolElemList = top.xpath("protocols/%s" % protocol.lower())
+    if protocolElemList:
+        protocolElem = protocolElemList[0]
+        protocolTag = "routing protocol--%s" % protocol
+        for interfaceNameElem in protocolElem.xpath("interface/name"):
+            if interfaceNameElem.text == "all":
+                interfaceTags = allInterfaceTags
+            else:
+                interfaceTags = ["interface--%s %s" % (snapshotDevice, interfaceNameElem.text)]
+            for tag in interfaceTags:
+                ot(fn, interfaceNameElem.sourceline, protocolTag, context=tag)
+
     for ripVersion in ("RIP", "RIPng"):
         ripElemList = top.xpath("protocols/%s" % ripVersion.lower())
         if not ripElemList:
-            return
+            break
         ripElem = ripElemList[0]
         protocolTag = "routing protocol--%s" % ripVersion
         for groupElem in ripElem.xpath("group"):
@@ -170,21 +212,6 @@ def outputProtocols(top, fn):
                 for tag in interfaceTags:
                     ot(fn, interfaceNameElem.sourceline, ripGroupTag, context=tag)
             ot(fn, nameElem.sourceline, protocolTag, context=ripGroupTag)
-
-    for protocol in ("PIM"):
-        protocolElemList = top.xpath("protocols/%s" % protocol.lower())
-        if not protocolElemList:
-            return
-        protocolElem = protocolElemList[0]
-        protocolTag = "routing protocol--%s" % protocol
-        for interfaceNameElem in protocolElem.xpath("interface/name"):
-            if interfaceNameElem.text == "all":
-                interfaceTags = allInterfaceTags
-            else:
-                interfaceTags = ["interface--%s %s" % (snapshotDevice, interfaceNameElem.text)]
-            for tag in interfaceTags:
-                ot(fn, interfaceNameElem.sourceline, protocolTag, context=tag)
-
 
 
 if __name__ == '__main__':
