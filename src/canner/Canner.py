@@ -167,7 +167,7 @@ class Canner(object):
                 self.addTagger(tag, path)
 
     def runTagger(self, tagger, tagRef, tag):
-        self.logger.debug("running tagger '%s'" % self._stripTagDir(tagger))
+        self.logger.info("running tagger '%s'" % self._stripTagDir(tagger))
 
         env = dict(os.environ)
         env["TAG"] = tag
