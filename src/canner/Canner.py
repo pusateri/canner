@@ -128,9 +128,9 @@ class Canner(object):
                 content = f.read()
 
         try:
-            lexer = pygments.lexers.guess_lexer_for_filename(filename, content)
+            lexer = pygments.lexers.guess_lexer_for_filename(filename, content, stripnl=False)
         except pygments.util.ClassNotFound:
-            lexer = pygments.lexers.get_lexer_for_mimetype('text/plain')
+            lexer = pygments.lexers.get_lexer_for_mimetype('text/plain', stripnl=False)
         formatter = pygments.formatters.get_formatter_by_name(
                 'canner', full=True, encoding='utf-8',
                 linenos='inline', cssfile='code-default.css')

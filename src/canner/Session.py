@@ -348,7 +348,7 @@ class Session(object):
             if index == 1:
                 self.child.send(" ")
             if index == 3:
-                raise SessionError("Problem issuing command")
+                raise SessionError("Problem determining personality")
         self.versionInfo = "".join(self.versionInfo.splitlines(True)[1:-1])
         self.versionInfo = re.sub(r"\r", "", self.versionInfo)
 
