@@ -79,7 +79,7 @@ class Canner(object):
         kind, _, name = tag.partition("--")
         assert kind == "file"
         with open(sourceFilename) as f:
-            command = f.read()
+            command = f.read().rstrip("\n")
         self.logger.debug("waiting to issue command '%s' for tag '%s'" %
                           (command, tag))
         self.pendingCommands.append((command, name))
