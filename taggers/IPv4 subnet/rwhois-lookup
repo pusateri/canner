@@ -24,13 +24,13 @@
 from __future__ import with_statement
 import os, re, sys, socket
 from itertools import count, izip
+from collections import defaultdict
 from canner import taglib
+import IPy
 
 
-def rwhois_query(address):
-    queue = [
-        ("rwhois.arin.net", 4321),
-        ]
+def rwhois_query(query):
+    queue = [("rwhois.arin.net", 4321)]
     result = ""
 
     while queue:
@@ -56,7 +56,7 @@ def rwhois_query(address):
             print "# could not connect to rwhois server '%s'" % host
             continue
 
-        s.send(address + "\n")
+        s.send(query + "\n")
         res = ""
         while True:
             data = s.recv(4096)
@@ -75,7 +75,10 @@ def extract_tags(context, src, filename):
     def ot(line, qname, properties=None, **kw):
         taglib.output_tag(filename, line, qname, properties, **kw)
 
-    attrs = {}
+    m = re.match(r"IPv4 subnet--(.*)/\d+", context)
+    subnet_ip = IPy.IP(m.group(1))
+    
+    attrs = defaultdict(list)
     in_context = False
     for linenum, line in src:
         line = line.strip()
@@ -93,23 +96,29 @@ def extract_tags(context, src, filename):
             if not attrs:
                 continue
 
-            ln, val = attrs["ID"]
-            id_tag = "registered network--" + val
-            ot(ln, id_tag, context=context)
+            reg_net_tag = None
+            for ln, val in attrs["IP-Network"]:
+                registered_ip = IPy.IP(val)
+                if subnet_ip in registered_ip:
+                    reg_net_tag = "registered network subnet--" + val
+                    reg_net_props = taglib.ip_subnet(val)[1]
+                    break
 
-            ln, val = attrs["IP-Network"]
-            net, props = taglib.ip_subnet(val)
-            subnet_tag = "registered network subnet--" + val
-            ot(ln, subnet_tag, props, context=id_tag)
+            if not reg_net_tag:
+                print "# could not find IP-Network for %s" % subnet_ip
+            else:
+                ot(ln, reg_net_tag, reg_net_props, context=context)
+                
+                ln, val = attrs["ID"][0]
+                id_tag = "registered network--" + val
+                ot(ln, id_tag, context=reg_net_tag)
 
-            ln, val = attrs.get("Org-Name", (None, None))
-            if not val:
-                ln, val = attrs.get("Organization", (None, None))
-            if val:
-                ot(ln, "registered organization--" + val, context=id_tag)
+                org_names = attrs["Org-Name"] or attrs["Organization"]
+                if org_names:
+                    ln, val = org_names[0]
+                    ot(ln, "registered organization--" + val, context=id_tag)
 
-            attrs = {}
-            continue
+            attrs = defaultdict(list)
 
         elif line.startswith("#"):
             pass
@@ -122,8 +131,8 @@ def extract_tags(context, src, filename):
             if not m:
                 print "# unexpected line: %r" % line
             else:
-                name, type, value = m.groups()
-                attrs[name] = (linenum, value)
+                name, valtype, value = m.groups()
+                attrs[name].append((linenum, value))
 
     return in_context
 
@@ -146,7 +155,7 @@ def main():
             found = extract_tags(tag, izip(line_counter, f), filename)
     if not found:
         print "# result not found -- querying rwhois"
-        result = "#TAG: " + tag + "\n" + rwhois_query(subnet)
+        result = "#TAG: " + tag + "\n" + rwhois_query("IP-Network=%s" % subnet)
         with open(filename, "a") as f:
             f.write(result)
         line_counter = count(line_counter.next() - 1)
