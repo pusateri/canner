@@ -106,7 +106,7 @@ class ExtremeWarePersonality(Personality):
 
     osName = "ExtremeWare"
     inCommandInteractions = (
-        (r"^.*Press <SPACE> to continue or <Q> to quit:", " "),
+        (r"Press <SPACE> to continue or <Q> to quit:", " "),
         )
     logoutCommand = "quit"
 
@@ -373,10 +373,10 @@ class Session(object):
             output += self.child.before
             if index == 0: break
             if self.personality.inCommandInteractions[index-1][1]:
-                self.child.sendline(self.personality.inCommandInteractions[index-1][1])
+                self.child.send(self.personality.inCommandInteractions[index-1][1])
 
-        scrubPromptPattern = r"(?s)\r?\n?" + re.escape(cmd) + r"\s*?\n"
-        output, numberFound = re.subn(scrubPromptPattern, "", output, 1)
+        scrubCommandEchoPattern = r"(?s)\r?\n?" + re.escape(cmd) + r"\s*?\n"
+        output, numberFound = re.subn(scrubCommandEchoPattern, "", output, 1)
         if numberFound != 1:
             raise SessionError("Problem issuing command")
 
