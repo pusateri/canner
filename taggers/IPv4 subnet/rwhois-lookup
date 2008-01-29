@@ -116,7 +116,8 @@ def extract_tags(context, src, filename):
                 org_names = attrs["Org-Name"] or attrs["Organization"]
                 if org_names:
                     ln, val = org_names[0]
-                    ot(ln, "registered organization--" + val, context=id_tag)
+                    ot(ln, "registered organization--" + val,
+                     context=reg_net_tag)
 
             attrs = defaultdict(list)
 
