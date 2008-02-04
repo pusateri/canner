@@ -14,7 +14,7 @@ Tags
 
   A Tag can also have an optional 'sort name' and 'display name'. Without these, the name is used for sorting and display.
 
-Tags can imply other tags creating ancestor/descendant relationships. This is accomplished through the use of the 'implies' or 'implied by' tag references. As an example, 'ospf area--0.0.0.0' is a tag that implies 'routing-protocol--ospf' and tag 'IPv4 subnet--10.1.1.0/24' is 'implied by' tag 'IPv4 address--10.1.1.1' (and the knowledge of the prefix length on the interface).
+  Tags can imply other tags creating ancestor/descendant relationships. This is accomplished through the use of the 'implies' or 'implied by' tag references. As an example, 'ospf area--0.0.0.0' is a tag that implies 'routing-protocol--ospf' and tag 'IPv4 subnet--10.1.1.0/24' is 'implied by' tag 'IPv4 address--10.1.1.1' (and the knowledge of the prefix length on the interface).
 
 Environment Variables
 ---------------------
@@ -55,7 +55,7 @@ Output File Format
            "tag": "IPv4 subnet--24.1.2.0/28",
            "sort name": "18010200/28",
            "implied by": "IPv4 address--24.1.2.3"
-           
+         
         },
         {
            "location": "foo.txt:100",
@@ -63,21 +63,27 @@ Output File Format
            "sort name": "18010203"
         }
     ]
+    
 
-The first time a tag is used, it springs into existence. Use of 'implies' or 'implied by' is mutually exclusive. A "sort name" and "display name" can also be associated with a tag. These traits of a tag will replace existing traits from previous usages.
+  The first time a tag is used, it springs into existence. Use of 'implies' or 'implied by' is mutually exclusive. A "sort name" and "display name" can also be associated with a tag. These traits of a tag will replace existing traits from previous usages.
 
 .. _JSON: http://www.json.org/
 .. _RFC 4627: http://www.ietf.org/rfc/rfc4627.txt
 
 Directory Structure
 -------------------
-  Commands
+  Taggers are organized in a directory structure which implies their dependency on other taggers. The names of the directories are either a tag 'kind' or a qualified tag containing 'kind--name'.
   
-  Executable programs
+  Initially, the personality of a device is determined using a 'show version' command from the tagger engine. The top level tagger directory has a sub-directory for each known operating system (OS) as well as other potential qualified tag names or kinds.
+  
+  In order to execute a command on a device, a new tag sub-directory is created of kind 'file' followed by the double dash (--) and the name of the file to save the output of the command to. The actual command to run on the device is placed inside the directory using a filename 'Command'. As an example, the sub-directory file--running.cfg would contain a file called 'Command' containing the line 'show running-config'. Also in that sub-directory would be any taggers that should be executed to parse the output of the command.
+
+  As the taggers are run and tags are used, the tagger scripts for those tags are also run. This allows a dependency chain to be created so that the appropriate taggers are run for the appropriate devices.
+
 
 Well known Tag Kinds
 --------------------
-  address family
+  address family 
   
   admin status
 
