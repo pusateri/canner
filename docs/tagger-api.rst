@@ -9,12 +9,11 @@ Overview
 
 Tags
 ----
-
   A Tag is represented by a name and qualified with a kind. Tags of the same kind are comparable. A double-dash is used to separate a tag's kind from its name. An example would be 'name server--ns.foo.com' where "name server" is the kind and ns.foo.com is the name.
 
-  A Tag can also have an optional 'sort name' and 'display name'. Without these, the name is used for sorting and display.
+  A Tag can also have an optional 'sort_name' and 'display_name'. Without these, the name is used for sorting and display.
 
-  Tags can imply other tags creating ancestor/descendant relationships. This is accomplished through the use of the 'implies' or 'implied by' tag references. As an example, 'ospf area--0.0.0.0' is a tag that implies 'routing-protocol--ospf' and tag 'IPv4 subnet--10.1.1.0/24' is 'implied by' tag 'IPv4 address--10.1.1.1' (and the knowledge of the prefix length on the interface).
+  Tags can imply other tags creating ancestor/descendant relationships. This is accomplished through the use of the 'implies' or 'implied_by' tag references. As an example, 'ospf area--0.0.0.0' is a tag that implies 'routing-protocol--ospf' and tag 'IPv4 subnet--10.1.1.0/24' is 'implied_by' tag 'IPv4 address--10.1.1.1' (and the knowledge of the prefix length on the interface). References to other Tags can be resolved by other taggers.
 
 Environment Variables
 ---------------------
@@ -39,7 +38,7 @@ Environment Variables
 Arguments
 ---------
 
-  There are currently no command line arguments passed to the tagger.
+  Since the taggers rely on the above environment variables, there are currently no command line arguments passed to the tagger.
 
 
 Output File Format
@@ -53,24 +52,24 @@ Output File Format
         {
            "location": "foo.txt:100",
            "tag": "IPv4 subnet--24.1.2.0/28",
-           "sort name": "18010200/28",
-           "implied by": "IPv4 address--24.1.2.3"
-         
+           "sort_name": "18010200/28",
+           "display_name": "24.1.2/28",
         },
         {
            "location": "foo.txt:100",
            "tag": "IPv4 address--24.1.2.3",
-           "sort name": "18010203"
+           "sort_name": "18010203"
+           "implies": "IPv4 subnet--24.1.2.0/28"
         }
     ]
     
 
-  The first time a tag is used, it springs into existence. Use of 'implies' or 'implied by' is mutually exclusive. A "sort name" and "display name" can also be associated with a tag. These traits of a tag will replace existing traits from previous usages.
+  The first time a tag is used, it springs into existence. Either 'implies' or 'implied_by' can be used independently or both can be used in the same tag usage for different relationships. A "sort_name" and "display_name" can also be associated with a tag. These traits of a tag will replace existing traits from previous usages.
 
 .. _JSON: http://www.json.org/
 .. _RFC 4627: http://www.ietf.org/rfc/rfc4627.txt
 
-Directory Structure
+Tagger Dependencies
 -------------------
   Taggers are organized in a directory structure which implies their dependency on other taggers. The names of the directories are either a tag 'kind' or a qualified tag containing 'kind--name'.
   
