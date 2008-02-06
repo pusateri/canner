@@ -24,21 +24,20 @@
 import sys, os, re
 from canner import taglib
 
-snapshotID = os.environ.get("SESSION_ID", "unknown")
-snapshotIDTag = "snapshot ID--%s" % snapshotID
-
-lines = open(sys.argv[1]).readlines(1024)
+lines = open(taglib.default_filename).readlines(1024)
 commitPattern = re.compile(r'(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d ...) by (.*?) via (.*)\n')
 
 m = commitPattern.match(lines[0])
 if m:
     dateString, user, source = m.groups()
-    taglib.output_tag(sys.argv[1], 1, "config user--%s" % user,
-                      context=snapshotIDTag)
+    t = taglib.tag("config user", user)
+    t.implied_by(taglib.env_tags.snapshot, 1)
 
     if len(lines) > 1:
         m = commitPattern.match(lines[1])
         if not m:
             comment = lines[1].rstrip('\n')
-            taglib.output_tag(sys.argv[1], 2, "config log--%s" % comment,
-                              context=snapshotIDTag)
+            t = taglib.tag("config log", comment)
+            t.implied_by(taglib.env_tags.snapshot, 2)
+
+taglib.output_tagging_log()

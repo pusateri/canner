@@ -27,121 +27,110 @@ import re
 import simplejson
 import IPy; IPy.check_addr_prefixlen = False
 
-_tags = []
 
 
 class Tag(object):
-    @classmethod
-    def ip_address(cls, address, kind=None, **kw):
-        ip = IPy.IP(address)
-        name = ip.strCompressed(wantprefixlen=0)
-        if ip.version() == 4:
-            if not kind: kind = "IPv4 address"
-            sort_name = "%08x" % ip.int()
-        else:
-            if not kind: kind = "IPv6 address"
-            sort_name = "%032x" % ip.int()
-        return cls(kind, name, sort_name=sort_name, **kw)
-
-    @classmethod
-    def ip_subnet(cls, address, kind=None, **kw):
-        ip = IPy.IP(address, make_net=True)
-        ip.NoPrefixForSingleIp = False
-        name = ip.strCompressed()
-        if ip.version() == 4:
-            if not kind: kind = "IPv4 subnet"
-            sort_name = "%08x/%02d" % (ip.int(), ip.prefixlen())
-        else:
-            if not kind: kind = "IPv6 subnet"
-            sort_name = "%032x/%03d" % (ip.int(), ip.prefixlen())
-        return cls(kind, name, sort_name=sort_name, **kw)    
-    
-    
-    def __init__(self, kind=None, name=None, qname=None, 
-                 sort_name=None, display_name=None):
-        if qname:
-            if kind or name:
-                raise ValueError("kind and name cannot be used with qname")
-            self.qname = qname
-            self.kind, _, self.name = qname.partition("--")
-        else:
-            if not kind or not name:
-                raise ValueError("kind and name must both be specified")
-            self.qname = "%s--%s" % (kind, name)
-            self.kind, self.name = kind, name
+    def __init__(self, kind=None, name=None, sort_name=None, display_name=None):
+        self.kind = kind
+        self.name = name
         self.sort_name = sort_name
         self.display_name = display_name
-        self.entries = dict()
+        self.qname = "%s--%s" % (kind, name)
+        self.changes = dict(sort_name=sort_name, display_name=display_name)
         
-        global _tags
-        _tags.append(self)
-
     def used(self, line=None, filename=None, sort_name=None, display_name=None):
-        entry = self._entry_for_location(line, filename)
         if sort_name:
-            self.sort_name = sort_name
-            entry["sort name"] = sort_name
+            self.sort_name = self.changes["sort_name"] = sort_name
         if display_name:
-            self.display_name = display_name
-            entry["display name"] = display_name
+            self.display_name = self.changes["display_name"] = display_name
+        self._flush_changes(line, filename)
         return self
 
     def implies(self, tag, line=None, filename=None):
-        entry = self._entry_for_location(line, filename)
-        try:
-            lst = entry["implies"]
-            if not isinstance(lst, list):
-                lst = [lst]
-            lst.append(tag.qname)
-        except KeyError:
-            entry["implies"] = tag.qname
+        self.changes["implies"] = tag.qname
+        self._flush_changes(line, filename)
         return self
 
     def implied_by(self, tag, line=None, filename=None):
-        entry = self._entry_for_location(line, filename)
-        try:
-            lst = entry["implied by"]
-            if not isinstance(lst, list):
-                lst = [lst]
-            lst.append(tag.qname)
-        except KeyError:
-            entry["implied by"] = tag.qname
+        self.changes["implied_by"] = tag.qname
+        self._flush_changes(line, filename)
         return self
-        
 
-    def _location(self, line=None, filename=None):
-        global default_filename
-        if not filename:
-            filename = default_filename
-        if filename and line:
-            return "%s:%d" % (filename, line)
-        elif filename:
-            return filename
-        raise ValueError("unknown location")
-        
-    def _entry_for_location(self, line, filename):
-        location = self._location(line, filename)
-        try:
-            return self.entries[location]
-        except KeyError:
-            entry = dict(tag=self.qname, location=location)
-            if not self.entries:  # This will be the first entry
-                if self.sort_name:
-                    entry["sort name"] = self.sort_name
-                if self.display_name:
-                    entry["display name"] = self.display_name
-            self.entries[location] = entry
-            return entry
+    logging_function = None
+    
+    def _flush_changes(self, line, filename):
+        if self.logging_function:
+            entry = dict((k, v) for k, v in self.changes.iteritems() if v)
+            if entry:
+                entry["tag"] = self.qname
+                if not filename:
+                    filename = default_filename
+                if filename and line:
+                    entry["location"] = "%s:%d" % (filename, line)
+                elif filename:
+                    entry["location"] = filename
+                else:
+                    raise ValueError("unknown location")
+                self.logging_function(entry)
+        self.changes = dict()
 
 
 
-def output_tags():
-    all_entries = []
-    for tag in _tags:
-        all_entries.extend(tag.entries.values())
-    simplejson.dump(all_entries, sys.stdout, indent=2, sort_keys=True)
+_known_tags = dict()
+
+def tag(kind=None, name=None, qname=None, **kw):
+    if qname:
+        if kind or name:
+            raise ValueError("kind and name cannot be used with qname")
+        kind, _, name = qname.partition("--")
+    else:
+        if not kind or not name:
+            raise ValueError("kind and name must both be specified")
+        qname = "%s--%s" % (kind, name)
+    try:
+        return _known_tags[qname]
+    except KeyError:
+        t = _known_tags[qname] = Tag(kind, name, **kw)
+        return t
+
+def ip_address_tag(address, kind=None, **kw):
+    ip = IPy.IP(address)
+    name = ip.strCompressed(wantprefixlen=0)
+    if ip.version() == 4:
+        if not kind: kind = "IPv4 address"
+        sort_name = "%08x" % ip.int()
+    else:
+        if not kind: kind = "IPv6 address"
+        sort_name = "%032x" % ip.int()
+    return tag(kind, name, sort_name=sort_name, **kw)
+
+def ip_subnet_tag(address, kind=None, **kw):
+    ip = IPy.IP(address, make_net=True)
+    ip.NoPrefixForSingleIp = False
+    name = ip.strCompressed()
+    if ip.version() == 4:
+        if not kind: kind = "IPv4 subnet"
+        sort_name = "%08x/%02d" % (ip.int(), ip.prefixlen())
+    else:
+        if not kind: kind = "IPv6 subnet"
+        sort_name = "%032x/%03d" % (ip.int(), ip.prefixlen())
+    return tag(kind, name, sort_name=sort_name, **kw)    
+
+
+
+_tagging_log = list()
+
+def _add_to_tagging_log(tag_self, entry):
+    _tagging_log.append(entry)
+Tag.logging_function = _add_to_tagging_log    
+
+def output_tagging_log():
+    simplejson.dump(_tagging_log, sys.stdout, indent=2, sort_keys=True)
     print
 
+
+
+default_filename = os.environ.get("TRIGGER_FILENAME", None)
 
 
 class _EnvironmentTags(object):
@@ -151,7 +140,7 @@ class _EnvironmentTags(object):
             return self._snapshot
         except AttributeError:
             session_id = os.environ.get("SESSION_ID", "unknown")
-            self._snapshot = Tag("snapshot ID", session_id)
+            self._snapshot = tag("snapshot ID", session_id)
             return self._snapshot
         
     @property
@@ -160,7 +149,7 @@ class _EnvironmentTags(object):
             return self._device
         except AttributeError:
             session_device = os.environ.get("SESSION_DEVICE", "unknown")
-            self._device = Tag("snapshot device", session_device)
+            self._device = tag("snapshot device", session_device)
             return self._device
         
     @property
@@ -169,9 +158,20 @@ class _EnvironmentTags(object):
             return self._trigger
         except AttributeError:
             trigger = os.environ.get("TRIGGER_TAG", "unknown")
-            self._trigger = Tag(qname=trigger)
+            self._trigger = tag(qname=trigger)
             return self._trigger
 
-envtags = _EnvironmentTags()
+env_tags = _EnvironmentTags()
 
-default_filename = os.environ.get("TRIGGER_FILENAME", None)
+
+
+def protocol_name(name):
+    protocol_names = {
+        'bgp':'BGP', 'dhcp':'DHCP', 'finger':'FINGER', 'ftp':'FTP',
+        'http':'HTTP', 'https':'HTTPS', 'igmp':'IGMP', 'MLD':'MLD', 
+        'mpls':'MPLS', 'msdp':'MSDP', 'netconf':'NETCONF', 'ospf':'OSPF', 
+        'pim':'PIM', 'rip':'RIP', 'ripng':'RIPng', 'scp':'SCP', 
+        'service-deployment':'SDXD', 'ssh':'SSH', 'telnet':'TELNET', 
+        'telnets':'TELNETS', 'xnm-clear-text':'XNM', 'xnm-ssl':'XNMS'
+        }
+    return protocol_names.get(name, name)

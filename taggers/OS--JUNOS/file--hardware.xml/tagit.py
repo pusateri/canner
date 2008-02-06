@@ -27,12 +27,7 @@ from canner import taglib
 from lxml import etree
 import os, sys
 
-snapshotID = os.environ.get("SESSION_ID", "unknown")
-snapshotIDTag = "snapshot ID--%s" % snapshotID
-snapshotDevice = os.environ.get("SESSION_DEVICE", "unknown")
-snapshotDeviceTag = "snapshot device--%s" % snapshotDevice
-
-filename = sys.argv[1]
+filename = taglib.default_filename
 with file(filename) as f:
     tree = etree.parse(f)
 top = tree.getroot()[0]
@@ -46,52 +41,52 @@ def get_text(parentElem, xpath):
     if elems:
         return elems[0].text
 
-def out_attr(parentElem, xpath, kind, context):
+def tag_attr(parentElem, xpath, kind, context):
     elems = parentElem.xpath(xpath, nsmap)
     if elems:
-        tag = kind + "--" + elems[0].text
-        taglib.output_tag(filename, elems[0].sourceline, tag, context=context)
-        return tag
+        t = taglib.tag(kind, elems[0].text)
+        t.implied_by(context, elems[0].sourceline)
+        return t
 
 chassisList = top.xpath("x:chassis", nsmap)
 for chassisElem in chassisList:
     nameElem = chassisElem.xpath("x:name", nsmap)[0]
-    chassisTag = "chassis--%s %s" % (snapshotDevice, nameElem.text)
-    taglib.output_tag(filename, nameElem.sourceline,
-                      snapshotDeviceTag, context=chassisTag)
+    chassis_tag = taglib.tag("chassis","%s %s" % (taglib.env_tags.device.name, 
+                                                  nameElem.text))
+    chassis_tag.implies(taglib.env_tags.device, nameElem.sourceline)
 
-    out_attr(chassisElem,
+    tag_attr(chassisElem,
              "x:serial-number",
              "chassis serial number",
-             chassisTag)
-    out_attr(chassisElem,
+             chassis_tag)
+    tag_attr(chassisElem,
              "x:description",
              "chassis description",
-             chassisTag)
+             chassis_tag)
 
     moduleList = chassisElem.xpath("x:chassis-module", nsmap)
     for moduleElem in moduleList:
         modNameElem = moduleElem.xpath("x:name", nsmap)[0]
-        moduleTag = "module--%s %s %s" % (
-            snapshotDevice, nameElem.text, modNameElem.text)
-        taglib.output_tag(filename, modNameElem.sourceline,
-                          moduleTag, context=snapshotIDTag)
-        taglib.output_tag(filename, modNameElem.sourceline,
-                          chassisTag, context=moduleTag)
+        module_tag = taglib.tag("module", "%s %s %s" % (
+            taglib.env_tags.device.name, nameElem.text, modNameElem.text))
+        module_tag.implied_by(taglib.env_tags.snapshot, modNameElem.sourceline)
+        module_tag.implies(chassis_tag, modNameElem.sourceline)
 
-        out_attr(moduleElem,
+        tag_attr(moduleElem,
                  "x:description",
                  "module description",
-                 moduleTag)
-        t = out_attr(moduleElem,
+                 module_tag)
+        t = tag_attr(moduleElem,
                      "x:serial-number",
                      "module serial number",
-                     moduleTag)
-        out_attr(moduleElem,
+                     module_tag)
+        tag_attr(moduleElem,
                  "x:part-number",
                  "module part number",
                  t)
-        out_attr(moduleElem,
+        tag_attr(moduleElem,
                  "x:version",
                  "module version",
-                 moduleTag)
+                 module_tag)
+
+taglib.output_tagging_log()

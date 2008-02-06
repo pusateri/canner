@@ -26,7 +26,7 @@ import pygments.formatters
 from pygments.formatter import Formatter
 import pygments.lexers
 from pygments.token import *
-from canner.taglib import *
+from canner import taglib
 import sys
 import traceback
 import IPy; IPy.check_addr_prefixlen = False
@@ -34,11 +34,6 @@ import os
 import re
 
 EndOfCommand = Token.EndOfCommand
-
-snapshotID = os.environ.get("SESSION_ID", "unknown")
-snapshotIDTag = "snapshot ID--%s" % snapshotID
-snapshotDevice = os.environ.get("SESSION_DEVICE", "unknown")
-snapshotDeviceTag = "snapshot device--%s" % snapshotDevice
 
 class UnexpectedToken(Exception):
     pass
@@ -136,8 +131,8 @@ class TagsFormatter(Formatter):
                     pass
 
                 elif cmd == 'hostname':
-                    self.outputTag("hostname--" + self.accept(String),
-                                   context=snapshotDeviceTag)
+                    t = taglib.tag("hostname", self.accept(String))
+                    t.implied_by(taglib.env_tags.device, self.lineNum)
                     self.expect(EndOfCommand)
 
                 elif cmd == 'interface':
@@ -153,8 +148,8 @@ class TagsFormatter(Formatter):
                     self.skipTo(EndOfCommand)
 
                 elif cmd == 'username':
-                    self.outputTag("user--" + self.accept(String),
-                                   context=snapshotDeviceTag)
+                    t = taglib.tag("user", self.accept(String))
+                    t.implied_by(taglib.env_tags.device, self.lineNum)
                     self.skipTo(EndOfCommand)
 
                 # elif cmd == 'version':
@@ -170,13 +165,15 @@ class TagsFormatter(Formatter):
 
     def interface(self):
         name = self.expect(Name)
-        ifTag = "interface--%s %s" % (snapshotDevice, name)
-        self.outputTag(ifTag, context=snapshotIDTag)
-        self.outputTag(snapshotDeviceTag, context=ifTag)
-        self.outputTag("interface type--" + re.sub(r"[0-9/]+$", "", name),
-                       context=ifTag)
+   
+        t = taglib.tag("interface", 
+                       "%s %s" % (taglib.env_tags.device.name, name))
+        t.implied_by(taglib.env_tags.snapshot, self.lineNum)
+        t.implies(taglib.env_tags.device, self.lineNum)
+        t.implies(taglib.tag("interface type", re.sub(r"[0-9/]+$", "", name)),
+                  self.lineNum)
+        
         self.expect(EndOfCommand)
-
         while True:
             if self.accept(Whitespace) is None:
                 return
@@ -187,7 +184,7 @@ class TagsFormatter(Formatter):
                 pass
 
             elif cmd == 'ip':
-                self.ip(ifTag)
+                self.ip(t)
 
             else:
                 self.skipTo(EndOfCommand)
@@ -196,54 +193,42 @@ class TagsFormatter(Formatter):
         cmd = self.expect(Keyword)
 
         if cmd == 'host':
-            self.outputTag("RADIUS server--" + self.expect(Literal),
-                           context=snapshotDeviceTag)
+            t = taglib.tag("RADIUS server", self.expect(Literal))
+            t.implied_by(taglib.env_tags.device, self.lineNum)
             self.skipTo(EndOfCommand)
 
-    def ip(self, ifTag=None):
+    def ip(self, if_tag=None):
         cmd = self.expect(Keyword)
 
         if False:
             pass
 
         elif cmd == 'address':
-            address = self.expect(Literal)
-            netmask = self.expect(Literal)
-
-            ip = IPy.IP('%s/%s' % (address, netmask))
-            sortName = ("%08x" if ip.version() == 4 else "%032x") % ip.int()
-            addressTag = "IPv4 interface address--%s" % ip.strCompressed(wantprefixlen=0)
-            self.outputTag(addressTag,
-                           sortName=sortName,
-                           context=ifTag)
-
-            ip = IPy.IP('%s/%s' % (address, netmask), make_net = True)
-            ip.NoPrefixForSingleIp = False
-            subnetTag = "IPv4 subnet--%s" % ip.strCompressed()
-            sortName = ("%08x" if ip.version() == 4 else "%032x") % ip.int()
-            self.outputTag(subnetTag,
-                           sortName=sortName,
-                           context=addressTag)
-
+            address = self.expect(Literal) + "/" + self.expect(Literal)
+            address_tag = taglib.ip_address_tag(address)
+            subnet_tag = taglib.ip_subnet_tag(address)
+            address_tag.implied_by(if_tag, self.lineNum)
+            subnet_tag.implied_by(address_tag, self.lineNum)
             self.skipTo(EndOfCommand)
 
         elif cmd == 'domain name' or cmd == 'domain-name':
-            self.outputTag("domain name--" + self.expect(String),
-                           context=snapshotDeviceTag)
+            t = taglib.tag("domain name", self.expect(String))
+            t.implied_by(taglib.env_tags.device, self.lineNum)
             self.expect(EndOfCommand)
 
         elif cmd == 'http':
             nextCmd = self.expect(Keyword)
             if nextCmd == 'server':
-                self.outputTag("service--HTTP", context=snapshotDeviceTag)
+                t = taglib.tag("service", "HTTP")
+                t.implied_by(taglib.env_tags.device, self.lineNum)
             elif nextCmd == 'secure-server':
-                self.outputTag("service--HTTPS", context=snapshotDeviceTag)
-
+                t = taglib.tag("service", "HTTPS")
+                t.implied_by(taglib.env_tags.device, self.lineNum)
             self.skipTo(EndOfCommand)
 
         elif cmd == 'name-server':
-            self.outputTag("name server--" + self.expect(Literal),
-                           context=snapshotDeviceTag)
+            t = taglib.tag("name server", self.expect(Literal))
+            t.implied_by(taglib.env_tags.device, self.lineNum)
             self.expect(EndOfCommand)
 
         elif cmd == 'scp':
@@ -251,23 +236,28 @@ class TagsFormatter(Formatter):
             if nextCmd == 'server':
                 nextCmd = self.expect(Keyword)
                 if nextCmd == 'enable':
-                    self.outputTag("service--%s" % protocol_name(cmd), context=snapshotDeviceTag)
-
+                    t = taglib.tag("service", taglib.protocol_name(cmd))
+                    t.implied_by(taglib.env_tags.device, self.lineNum)
             self.skipTo(EndOfCommand)
 
         elif cmd == 'ssh':
             if self.sshEnabled == False:
-                self.outputTag("service--%s" % protocol_name(cmd), context=snapshotDeviceTag)
+                t = taglib.tag("service", taglib.protocol_name(cmd))
+                t.implied_by(taglib.env_tags.device, self.lineNum)
                 self.sshEnabled = True
             nextCmd = self.expect(Keyword)
             if nextCmd == 'version':
                 version = self.expect(Literal)
                 if version == '2':
-                    self.outputTag("service--SSHv2", context=snapshotDeviceTag)
-                    self.outputTag("service--%s" % protocol_name(cmd), context=snapshotDeviceTag)
+                    t = taglib.tag("service", taglib.protocol_name(cmd))
+                    t.implied_by(taglib.env_tags.device, self.lineNum)
+                    t = taglib.tag("service", "SSHv2")
+                    t.implied_by(taglib.env_tags.device, self.lineNum)
                 elif version == '1':
-                    self.outputTag("service--SSHv1", context=snapshotDeviceTag)
-                    self.outputTag("service--%s" % protocol_name(cmd), context=snapshotDeviceTag)
+                    t = taglib.tag("service", taglib.protocol_name(cmd))
+                    t.implied_by(taglib.env_tags.device, self.lineNum)
+                    t = taglib.tag("service", "SSHv1")
+                    t.implied_by(taglib.env_tags.device, self.lineNum)
             self.skipTo(EndOfCommand)
 
         else:
@@ -277,13 +267,15 @@ class TagsFormatter(Formatter):
         pass
 
 def main():
-    filename = sys.argv[1]
+    filename = taglib.default_filename
     content = open(filename).read()
 
     lexer = pygments.lexers.guess_lexer_for_filename(filename, content)
     formatter = TagsFormatter(fn=filename)
 
     pygments.highlight(content, lexer, formatter, sys.stdout)
+    
+    taglib.output_tagging_log()
 
 
 if __name__ == '__main__':

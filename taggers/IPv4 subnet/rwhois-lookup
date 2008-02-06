@@ -27,7 +27,6 @@ from itertools import count, izip
 from collections import defaultdict
 import IPy
 from canner import taglib
-from canner.taglib import Tag
 
 
 def rwhois_query(query):
@@ -97,7 +96,7 @@ def extract_tags(src, context):
             for ln, val in attrs["IP-Network"]:
                 registered_ip = IPy.IP(val)
                 if subnet_ip in registered_ip:
-                    reg_net_tag = Tag.ip_subnet(val, "registered network subnet")
+                    reg_net_tag = taglib.ip_subnet_tag(val, "registered network subnet")
                     break
 
             if not reg_net_tag:
@@ -106,12 +105,12 @@ def extract_tags(src, context):
                 reg_net_tag.implied_by(context, ln)
 
                 ln, val = attrs["ID"][0]
-                Tag("registered network", val).implied_by(reg_net_tag, ln)
+                taglib.tag("registered network", val).implied_by(reg_net_tag, ln)
 
                 org_names = attrs["Org-Name"] or attrs["Organization"]
                 if org_names:
                     ln, val = org_names[0]
-                    Tag("registered organization", val).implied_by(reg_net_tag, ln)
+                    taglib.tag("registered organization", val).implied_by(reg_net_tag, ln)
 
             attrs = defaultdict(list)
 
@@ -133,10 +132,10 @@ def extract_tags(src, context):
 
 
 def main():
-    context = taglib.envtags.trigger
-    context = taglib.envtags.trigger
-    context = taglib.envtags.trigger
-    context = taglib.envtags.trigger
+    context = taglib.env_tags.trigger
+    context = taglib.env_tags.trigger
+    context = taglib.env_tags.trigger
+    context = taglib.env_tags.trigger
     subnet = context.name
 
     taglib.default_filename = filename = "rwhois.log"
@@ -155,8 +154,8 @@ def main():
         line_counter = count(line_counter.next() - 1)
         extract_tags(izip(line_counter, result.splitlines()), context)
         
-    Tag("file", filename).used(filename=filename)
-    taglib.output_tags()
+    taglib.tag("file", filename).used(filename=filename)
+    taglib.output_tagging_log()
 
 if __name__ == "__main__":
     main()

@@ -1,4 +1,4 @@
-#!/usr/bin/perl -nl
+#!/usr/bin/perl -w
 
 #
 # Copyright 2007 !j Incorporated
@@ -21,8 +21,16 @@
 
 # $Id: parse-extremeware-show-version.pl 2 2007-12-17 21:12:04Z keith $
 
-/^Image\s*:\s*ExtremeWare\s+Version\s+(.*?)\s/i && do {
-    print "$ARGV:$.: OS version--ExtremeWare $1 {{context snapshot device--$ENV{SESSION_DEVICE}}}";
-    print "$ARGV:$.: OS--ExtremeWare {{context OS version--ExtremeWare $1}}";
-    print "$ARGV:$.: OS vendor--Extreme Networks {{context OS--ExtremeWare}}";
-};
+@ARGV = ($ENV{TRIGGER_FILENAME});
+while (<>) {
+    /^Image\s*:\s*ExtremeWare\s+Version\s+(.*?)\s/i && print <<EOF;
+[
+    {
+        "location": "$ARGV:$.",
+        "tag": "OS version--ExtremeWare $1",
+        "implied_by": "snapshot device--$ENV{SESSION_DEVICE}",
+        "implies": "OS--ExtremeWare"
+    }
+]
+EOF
+}

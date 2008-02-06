@@ -24,12 +24,11 @@
 import sys, os, re
 from canner import taglib
 
-snapshotID = os.environ.get("SESSION_ID", "unknown")
-snapshotIDTag = "snapshot ID--%s" % snapshotID
-
-data = open(sys.argv[1]).read(1024).strip('\n')
+data = open(taglib.default_filename).read(1024).strip('\n')
 m = re.search(r'NVRAM config last updated at .*? by (.*)$', data, re.MULTILINE)
 if m:
     num = data[0:m.start(0)].count('\n')
-    taglib.output_tag(sys.argv[1], num, 'config user--%s' % m.group(1),
-                      context=snapshotIDTag)
+    t = taglib.tag("config user", m.group(1))
+    t.implied_by(taglib.env_tags.snapshot, num)
+    
+taglib.output_tagging_log()

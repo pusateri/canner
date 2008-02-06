@@ -35,22 +35,22 @@ format_ts = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S").strftime
 ts = format_ts("%Y-%m-%dT%H:%M:%S")
 ts_display = format_ts("%Y-%m-%d %H:%M")
 
-sess_tag = taglib.Tag("snapshot ID", sid,
+sess_tag = taglib.tag("snapshot ID", sid,
                       sort_name="%s @ %s" % (device, ts),
                       display_name="%s @ %s" % (device, ts_display))
 sess_tag.used()
                       
-dev_tag = taglib.Tag("snapshot device", device)
+dev_tag = taglib.tag("snapshot device", device)
 dev_tag.implied_by(sess_tag)
 
-taglib.Tag("snapshot user", user).implied_by(sess_tag)
-taglib.Tag("OS", os_name).implied_by(dev_tag)
+taglib.tag("snapshot user", user).implied_by(sess_tag)
+taglib.tag("OS", os_name).implied_by(dev_tag)
 
-t = taglib.Tag("snapshot timestamp", ts, display_name=ts_display)
+t = taglib.tag("snapshot timestamp", ts, display_name=ts_display)
 t.implied_by(sess_tag)
-t = taglib.Tag("snapshot date", format_ts("%Y-%m-%d")).implied_by(t)
-t = taglib.Tag("snapshot month", format_ts("%Y-%m")).implied_by(t)
-t = taglib.Tag("snapshot year", format_ts("%Y")).implied_by(t)
+t = taglib.tag("snapshot date", format_ts("%Y-%m-%d")).implied_by(t)
+t = taglib.tag("snapshot month", format_ts("%Y-%m")).implied_by(t)
+t = taglib.tag("snapshot year", format_ts("%Y")).implied_by(t)
 
 
-taglib.output_tags()
+taglib.output_tagging_log()

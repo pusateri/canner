@@ -27,10 +27,7 @@ from canner import taglib
 from lxml import etree
 import os, sys
 
-snapshotDevice = os.environ.get("SESSION_DEVICE", "unknown")
-snapshotDeviceTag = "snapshot device--%s" % snapshotDevice
-
-filename = sys.argv[1]
+filename = taglib.default_filename
 with file(filename) as f:
     tree = etree.parse(f)
 top = tree.getroot()[0]
@@ -44,44 +41,46 @@ def get_text(parentElem, xpath):
     if elems:
         return elems[0].text
 
-def out_attr(parentElem, xpath, kind, context):
+def tag_attrs(parentElem, xpath, kind, context):
     elems = parentElem.xpath(xpath, nsmap)
     for elem in elems:
-        taglib.output_tag(filename, elem.sourceline,
-                          kind + "--" + elem.text,
-                          context=context)
+        t = taglib.tag(kind, elem.text)
+        t.implied_by(context, elem.sourceline)
+
 
 physicalElems = top.xpath("x:physical-interface", nsmap)
 for physicalElem in physicalElems:
     nameElems = physicalElem.xpath("x:name", nsmap)
     if not nameElems: continue
     nameElem = nameElems[0]
-    physicalTag = "physical interface--%s %s" % (snapshotDevice, nameElem.text)
-    taglib.output_tag(filename, nameElem.sourceline,
-                      snapshotDeviceTag, context=physicalTag)
+    physical_tag = taglib.tag("physical interface",
+                              "%s %s" % (taglib.env_tags.device.name,
+                                         nameElem.text))
+    physical_tag.implies(taglib.env_tags.device, nameElem.sourceline)                                        
 
-    out_attr(physicalElem, "x:speed", "speed", physicalTag)
-    out_attr(physicalElem, "x:mtu", "MTU", physicalTag)
-    out_attr(physicalElem, "x:if-type", "interface type", physicalTag)
-    out_attr(physicalElem, "x:link-level-type", "link-level type", physicalTag)
+    tag_attrs(physicalElem, "x:speed", "speed", physical_tag)
+    tag_attrs(physicalElem, "x:mtu", "MTU", physical_tag)
+    tag_attrs(physicalElem, "x:if-type", "interface type", physical_tag)
+    tag_attrs(physicalElem, "x:link-level-type", "link-level type", physical_tag)
 
     adminStatus = None
     adminStatusElems = physicalElem.xpath("x:admin-status", nsmap)
     if adminStatusElems:
         elem = adminStatusElems[0]
         adminStatus = elem.text
-        taglib.output_tag(filename, elem.sourceline,
-                          "admin status--" + adminStatus,
-                          context=physicalTag)
+        t = taglib.tag("admin status", adminStatus)
+        t.implied_by(physical_tag, elem.sourceline)
+
     operStatus = None
     operStatusElems = physicalElem.xpath("x:oper-status", nsmap)
     if operStatusElems:
         operStatusElem = operStatusElems[0]
         operStatus = operStatusElem.text
-        taglib.output_tag(filename, operStatusElem.sourceline,
-                          "operational status--" + operStatus,
-                          context=physicalTag)
+        t = taglib.tag("operational status", operStatus)
+        t.implied_by(physical_tag, operStatusElem.sourceline)
+
     if adminStatus and operStatus and adminStatus != operStatus:
-        taglib.output_tag(filename, operStatusElem.sourceline,
-                          "flag--operational and admin status differ",
-                          context=physicalTag)
+        t = taglib.tag("flag", "operational and admin status differ")
+        t.implied_by(physical_tag, operStatusElem.sourceline)
+
+taglib.output_tagging_log()

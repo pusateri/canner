@@ -19,18 +19,18 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id: rwhois-lookup 7 2007-12-17 21:43:06Z pusateri $
+# $Id: $
 
 from __future__ import with_statement
 import os, re, sys, socket
 from itertools import count, izip
+from collections import defaultdict
+import IPy
 from canner import taglib
 
 
-def rwhois_query(address):
-    queue = [
-        ("rwhois.arin.net", 4321),
-        ]
+def rwhois_query(query):
+    queue = [("rwhois.arin.net", 4321)]
     result = ""
 
     while queue:
@@ -56,7 +56,7 @@ def rwhois_query(address):
             print "# could not connect to rwhois server '%s'" % host
             continue
 
-        s.send(address + "\n")
+        s.send(query + "\n")
         res = ""
         while True:
             data = s.recv(4096)
@@ -70,11 +70,9 @@ def rwhois_query(address):
 
     return result
 
-def extract_tags(context, src, filename):
-    def ot(line, qname, properties=None, **kw):
-        taglib.output_tag(filename, line, qname, properties, **kw)
 
-    attrs = {}
+def extract_tags(src, context):
+    attrs = defaultdict(list)
     in_context = False
     for linenum, line in src:
         line = line.strip()
@@ -82,7 +80,7 @@ def extract_tags(context, src, filename):
         if line.startswith("#TAG: "):
             if in_context:
                 return True
-            if line == "#TAG: " + context:
+            if line == "#TAG: " + context.qname:
                 in_context = True
 
         if not in_context:
@@ -92,12 +90,11 @@ def extract_tags(context, src, filename):
             if not attrs:
                 continue
 
-            ln, val = attrs.get("Org-Name", (None, None))
+            ln, val = attrs.get("Org-Name", [(None, None)])[0]
             if val:
-                ot(ln, "as organization--" + val, context=context)
+                taglib.tag("as organization", val).implied_by(context, ln)
 
-            attrs = {}
-            continue
+            attrs = defaultdict(list)
 
         elif line.startswith("#"):
             pass
@@ -108,39 +105,36 @@ def extract_tags(context, src, filename):
         else:
             m = re.match(r"^asn:(.*?)(;.)?:(.*?)$", line)
             if not m:
-                print "# unexpected line: %r" % line
+                print >>sys.stderr, "# unexpected line: %r" % line
             else:
-                name, type, value = m.groups()
-                attrs[name] = (linenum, value)
+                name, valtype, value = m.groups()
+                attrs[name].append((linenum, value))
 
     return in_context
 
-    
+
 def main():
-    tag = os.environ["TAG"]
+    context = taglib.env_tags.trigger
+    asn = context.name
 
-    m = re.match(r"autonomous system--(\d+)", tag)
-    if not m:
-        print >>sys.stderr, "could not get ASN from tag"
-        sys.exit(1)
-    asn = m.group(1)
-
-    filename = "rwhois-asn.log"
+    taglib.default_filename = filename = "rwhois-asn.log"
     line_counter = count(1)
-
     found = False
+
     if os.path.exists(filename):
         with open(filename) as f:
-            found = extract_tags(tag, izip(line_counter, f), filename)
+            found = extract_tags(izip(line_counter, f), context)
+
     if not found:
-        print "# result not found -- querying rwhois"
-        result = "#TAG: " + tag + "\n" + rwhois_query('AS-Number=' + asn)
+        result = ("#TAG: " + context.qname + "\n" + 
+                  rwhois_query("AS-Number=" + asn))
         with open(filename, "a") as f:
             f.write(result)
         line_counter = count(line_counter.next() - 1)
-        extract_tags(tag, izip(line_counter, result.splitlines()), filename)
-        taglib.output_tag(filename, 0, "file--" + filename)
-
+        extract_tags(izip(line_counter, result.splitlines()), context)
+        
+    taglib.tag("file", filename).used(filename=filename)
+    taglib.output_tagging_log()
 
 if __name__ == "__main__":
     main()

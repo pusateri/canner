@@ -21,13 +21,11 @@
 
 # $Id: $
 
-my $filename = $ENV{TRIGGER_FILENAME};
-open FILE, $filename;
-
-while (<FILE>) {
-    /^JUNOS (?:Software Release|Base OS Software Suite) \[(.*)\]/ && print <<EOF
+@ARGV = ($ENV{TRIGGER_FILENAME});
+while (<>) {
+    /^JUNOS (?:Software Release|Base OS Software Suite) \[(.*)\]/ && print <<EOF;
 [{
-    "location": "$filename:$.",
+    "location": "$ARGV:$.",
     "tag": "OS version--JUNOS $1",
     "implied_by": "snapshot device--$ENV{SESSION_DEVICE}",
     "implies": "OS--JUNOS"

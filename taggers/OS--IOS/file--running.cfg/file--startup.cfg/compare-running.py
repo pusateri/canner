@@ -22,15 +22,12 @@
 # $Id: compare-running.py 3 2007-12-17 21:12:31Z keith $
 
 import sys, os, re
-from canner import taglib
 from os.path import dirname
-
-snapshotID = os.environ.get("SESSION_ID", "unknown")
-snapshotIDTag = "snapshot ID--%s" % snapshotID
+from canner import taglib
 
 def main():
-    startup = file(sys.argv[1])
-    running = file(dirname(sys.argv[1]) + "running.cfg")
+    startup = file(taglib.default_filename)
+    running = file(dirname(taglib.default_filename) + "running.cfg")
 
     m = re.compile(r'^version')
     line = startup.readline()
@@ -55,9 +52,10 @@ def main():
 
 
     if line != line2:
-        taglib.output_tag(sys.argv[1], lineno, 'flag--unsaved changes',
-                          context=snapshotIDTag)
+        t = taglib.tag("flag", "unsaved changes")
+        t.implied_by(taglib.env_tags.snapshot, lineno)
 
+    taglib.output_tagging_log()
 
 if __name__ == '__main__':
     main()

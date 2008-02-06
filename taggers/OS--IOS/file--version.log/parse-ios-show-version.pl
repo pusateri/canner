@@ -1,4 +1,4 @@
-#!/usr/bin/perl -nl
+#!/usr/bin/perl -w
 
 #
 # Copyright 2007 !j Incorporated
@@ -21,9 +21,28 @@
 
 # $Id: parse-ios-show-version.pl 2 2007-12-17 21:12:04Z keith $
 
-/^.*IOS.*Software.*\((.*?)\).*Version\s+([^,]+)/ && do {
-    print "$ARGV:$.: IOS type--$1 {{context snapshot device--$ENV{SESSION_DEVICE}}}";
-    print "$ARGV:$.: OS version--IOS $2 {{context IOS type--$1}}";
-    print "$ARGV:$.: OS--IOS {{context OS version--IOS $2}}";
-};
-/^System image file.*"\w+:(.*)"/ && print "$ARGV:$.: system image file--$1 {{context snapshot device--$ENV{SESSION_DEVICE}}}";
+@ARGV = ($ENV{TRIGGER_FILENAME});
+while (<>) {
+    /^.*IOS.*Software.*\((.*?)\).*Version\s+([^,]+)/ && print <<EOF;
+[
+    {
+        "location": "$ARGV:$.",
+        "tag": "IOS type--$1",
+        "implied_by": "snapshot device--$ENV{SESSION_DEVICE}"
+    },
+    {
+        "location": "$ARGV:$.",
+        "tag": "OS version--IOS $2",
+        "implied_by": "IOS type--$1",
+        "implies": "OS--IOS"
+    },
+EOF
+    /^System image file.*"\w+:(.*)"/ && print <<EOF;
+    {
+        "location": "$ARGV:$.",
+        "tag": "system image file--$1",
+        "implied_by": "snapshot device--$ENV{SESSION_DEVICE}"
+    }
+]
+EOF
+}

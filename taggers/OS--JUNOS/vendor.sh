@@ -21,4 +21,10 @@
 
 # $Id: vendor.sh 2 2007-12-17 21:12:04Z keith $
 
-echo "$1:0: vendor--Juniper {{context snapshot device--$SESSION_DEVICE}}"
+cat <<EOF
+[{
+    "tag": "vendor--Cisco",
+    "location": "$TRIGGER_FILENAME",
+    "implied_by": "snapshot device--$SESSION_DEVICE"
+}]
+EOF
