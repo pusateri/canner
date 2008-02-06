@@ -21,221 +21,235 @@
 
 # $Id: parse-junos-xml-config.py 7 2007-12-17 21:43:06Z pusateri $
 
-from canner.taglib import *
+from __future__ import with_statement
+
 import re
-import IPy
+import sys
+from lxml import etree
+from canner import taglib
 
-tagPatterns = [
-    ('system/domain-name',                    'domain name',       text),
-    ('system/time-zone',                      'time zone',         text),
-    ('system/name-server/name',               'name server',       text),
-    ('system/radius-server/name',             'RADIUS server',     text),
-    ('system/ntp/boot-server',                'NTP boot server',   text),
-    ('system/ntp/server/name',                'NTP server',        text),
-    ('system/login/user/name',                'user',              text),
-    ('snmp/community/name',                   'SNMP community',    text),
-]
+all_interface_tags = []
 
-ot = output_tag
+device_tag = taglib.env_tags.device
+snapshot_tag = taglib.env_tags.snapshot
 
-allInterfaceTags = []
-
-import os
-snapshotID = os.environ.get("SESSION_ID", "unknown")
-snapshotIDTag = "snapshot ID--%s" % snapshotID
-snapshotDevice = os.environ.get("SESSION_DEVICE", "unknown")
-snapshotDeviceTag = "snapshot device--%s" % snapshotDevice
-
-def serviceTag(element, fn):
-    serviceTag = "service--%s" % protocol_name(element.tag)
-    ot(fn, element.sourceline, serviceTag, context=snapshotDeviceTag)
-
-def serviceTags(top, fn):
+def tag_services(top):
+    def service_tag(e):
+        t = taglib.tag("service", taglib.protocol_name(e.tag))
+        t.implied_by(taglib.env_tags.device, e.sourceline)
     for elem in top.xpath("system/services/*"):
         if elem.tag == 'web-management':
             for proto in elem.xpath("*"):
-                serviceTag(proto, fn)
+                service_tag(proto)
         else:
-            serviceTag(elem, fn)
+            service_tag(elem)
 
-def outputInterfaceTags(top, fn):
-    for ifElem in top.xpath("interfaces/interface"):
-        ifNameElem = ifElem.xpath("name")[0]
-        ifTag = "physical interface--%s %s" % (snapshotDevice, ifNameElem.text)
-        ot(fn, ifNameElem.sourceline, snapshotDeviceTag, context=ifTag)
+def tag_interfaces(top):
+    for if_elem in top.xpath("interfaces/interface"):
+        if_name_elem = if_elem.xpath("name")[0]
+        if_tag = taglib.tag("physical interface", 
+                           "%s %s" % (device_tag.name, if_name_elem.text))
+        if_tag.implies(device_tag, if_name_elem.sourceline)
 
-        descrElems = ifElem.xpath("description")
-        if descrElems:
-            elem = descrElems[0]
-            tag = "interface description--" + elem.text
-            ot(fn, elem.sourceline, tag, context=ifTag)
+        descr_elems = if_elem.xpath("description")
+        if descr_elems:
+            elem = descr_elems[0]
+            t = taglib.tag("interface description", elem.text)
+            t.implied_by(if_tag, elem.sourceline)
 
-        m = re.match(r"[a-zA-Z]+", ifNameElem.text)
+        m = re.match(r"[a-zA-Z]+", if_name_elem.text)
         if m:
-            ot(fn, ifNameElem.sourceline, "interface type--" + m.group(0),
-               context=ifTag)
+            t = taglib.tag("interface type", m.group(0))
+            t.implied_by(if_tag, if_name_elem.sourceline)
 
-        for unitElem in ifElem.xpath("unit"):
-            unitNameElem = unitElem.xpath("name")[0]
-            unitName = ifNameElem.text + "." + unitNameElem.text
-            unitTag = "interface--%s %s" % (snapshotDevice, unitName)
-            ot(fn, unitNameElem.sourceline, unitTag, context=snapshotIDTag)
-            ot(fn, ifNameElem.sourceline, ifTag, context=unitTag)
+        for unit_elem in if_elem.xpath("unit"):
+            unit_name_elem = unit_elem.xpath("name")[0]
+            unit_name = if_name_elem.text + "." + unit_name_elem.text
+            unit_tag = taglib.tag("interface", "%s %s" % (device_tag.name, 
+                                                         unit_name))
+            unit_tag.implied_by(snapshot_tag, unit_name_elem.sourceline)
+            unit_tag.implies(if_tag, unit_name_elem.sourceline)
 
-            allInterfaceTags.append(unitTag)
+            all_interface_tags.append(unit_tag)
 
-            vlanIDList = unitElem.xpath("vlan-id")
-            if vlanIDList:
-                id = int(vlanIDList[0].text)
-                vlanIDTag = "VLAN ID--%d" % id
-                ot(fn, vlanIDList[0].sourceline, vlanIDTag,
-                   sortName="%04d" % id,
-                   context=unitTag)
+            vlan_id_list = unit_elem.xpath("vlan-id")
+            if vlan_id_list:
+                vlan_id = int(vlan_id_list[0].text)
+                vlan_id_tag = taglib.tag("VLAN ID", str(vlan_id), 
+                                       sort_name="%05d" % vlan_id)
+                vlan_id_tag.implied_by(unit_tag, vlan_id_list[0].sourceline)
 
-            descrElems = unitElem.xpath("description")
-            if descrElems:
-                elem = descrElems[0]
-                tag = "interface description--" + elem.text
-                ot(fn, elem.sourceline, tag, context=unitTag)
+            descr_elems = unit_elem.xpath("description")
+            if descr_elems:
+                elem = descr_elems[0]
+                t = taglib.tag("interface description", elem.text)
+                t.implied_by(unit_tag, elem.sourceline)
 
+            inet_list = unit_elem.xpath("family/inet")
+            inet_elem = inet_list[0] if inet_list else None
+            inet6_list = unit_elem.xpath("family/inet6")
+            inet6_elem = inet6_list[0] if inet6_list else None
 
-            def outputAddresses(familyElem, af):
-                for addressNameElem in familyElem.xpath("address/name"):
-                    name, properties = ip_address(addressNameElem.text)
-                    addressTag = "%s interface address--%s" % (af, name)
-                    ot(fn, addressNameElem.sourceline, addressTag, properties,
-                        context=unitTag)
+            def tag_addresses(family_elem):
+                for address_elem in family_elem.xpath("address/name"):
+                    t = taglib.ip_address_tag(address_elem.text)
+                    t.implied_by(unit_tag, address_elem.sourceline)
+                    t.implies(taglib.ip_subnet_tag(address_elem.text),
+                              address_elem.sourceline)
+            if inet_elem:
+                tag_addresses(inet_elem)
+            if inet6_elem:
+                tag_addresses(inet6_elem)
+                          
+            if inet_elem and inet6_elem:
+                t = taglib.tag("address family", "inet and inet6")
+                t.implied_by(unit_tag, inet_elem.sourceline)
+                t.implied_by(unit_tag, inet6_elem.sourceline)
+            elif inet_elem:
+                t = taglib.tag("address family", "inet only")
+                t.implied_by(unit_tag, inet_elem.sourceline)
+            elif inet6_elem:
+                t = taglib.tag("address family", "inet6 only")
+                t.implied_by(unit_tag, inet_elem.sourceline)
+                
 
-                    name, properties = ip_subnet(addressNameElem.text)
-                    subnetTag = "%s subnet--%s" % (af, name)
-                    ot(fn, addressNameElem.sourceline, subnetTag, properties,
-                        context=addressTag)
-
-            inetFamilyList = unitElem.xpath("family/inet")
-            inetFamilyElem = inetFamilyList[0] if inetFamilyList else None
-            inet6FamilyList = unitElem.xpath("family/inet6")
-            inet6FamilyElem = inet6FamilyList[0] if inet6FamilyList else None
-
-            if inetFamilyElem and inet6FamilyElem:
-                ot(fn, inetFamilyElem.sourceline,
-                   "address family--inet and inet6", context=unitTag)
-                ot(fn, inet6FamilyElem.sourceline,
-                   "address family--inet and inet6", context=unitTag)
-                outputAddresses(inetFamilyElem, "IPv4")
-                outputAddresses(inet6FamilyElem, "IPv6")
-            elif inetFamilyElem:
-                ot(fn, inetFamilyElem.sourceline, "address family--inet only",
-                   context=unitTag)
-                outputAddresses(inetFamilyElem, "IPv4")
-            elif inet6FamilyElem:
-                ot(fn, inet6FamilyElem.sourceline, "address family--inet6 only",
-                   context=unitTag)
-                outputAddresses(inet6FamilyElem, "IPv6")
-
-def outputProtocols(top, fn):
+def tag_protocols(top):
     
     protocol = "BGP"
-    protocolElemList = top.xpath("protocols/%s" % protocol.lower())
-    if protocolElemList:
-        protocolElem = protocolElemList[0]
-        protocolTag = "routing protocol--%s" % protocol
-        for groupElem in protocolElem.xpath("group"):
-            nameElem = groupElem.xpath("name")[0]
-            bgpGroupTag = "%s group--%s %s" % (protocol, snapshotDevice, nameElem.text)
-            ot(fn, nameElem.sourceline, bgpGroupTag, context=snapshotDeviceTag)
-            for neighborNameElem in groupElem.xpath("neighbor/name"):
-                address = IPy.IP(neighborNameElem.text)
-                if address.version() == 4:
-                    af = 'IPv4'
-                elif address.version() == 6:
-                    af = 'IPv6'
-                else:
-                    break
-                addressTag = "%s interface address--%s" % (af, neighborNameElem.text)
-                peerTag = "%s peer--%s" % (protocol, neighborNameElem.text)
-                ot(fn, neighborNameElem.sourceline, peerTag, context=addressTag)
-                ot(fn, neighborNameElem.sourceline, peerTag, context=bgpGroupTag)
-                ot(fn, protocolElem.sourceline, protocolTag, context=peerTag)
+    protocol_elem_list = top.xpath("protocols/%s" % protocol.lower())
+    if protocol_elem_list:
+        protocol_elem = protocol_elem_list[0]
+        protocol_tag = taglib.tag("routing protocol", protocol)
+        for group_elem in protocol_elem.xpath("group"):
+            name_elem = group_elem.xpath("name")[0]
+            group_tag = taglib.tag("%s group" % protocol,
+                                   "%s %s" % (device_tag.name, name_elem.text))
+            group_tag.implied_by(device_tag, name_elem.sourceline)
+            for peer_name_elem in group_elem.xpath("neighbor/name"):
+                peer_tag = taglib.tag("%s peer" % protocol, peer_name_elem.text)
+                address_tag = taglib.ip_address_tag(peer_name_elem.text)
+                peer_tag.implied_by(address_tag, peer_name_elem.sourceline)
+                peer_tag.implied_by(group_tag, peer_name_elem.sourceline)
+                peer_tag.implies(protocol_tag, peer_name_elem.sourceline)
                 # determine the AS number, if the peer doesn't have its own, use the groups
-                asnElemList = neighborNameElem.xpath("peer-as")
-                if len(asnElemList) == 0:
-                    asnElemList = groupElem.xpath("peer-as")
-                if len(asnElemList) > 0:
-                    asnElem = asnElemList[0]
-                    asnTag = "autonomous system--%s" % asnElem.text
-                    ot(fn, asnElem.sourceline, asnTag, context=peerTag,
-                       sortName='%010d' % int(asnElem.text))
-            
+                asn_elem_list = peer_name_elem.xpath("peer-as")
+                if len(asn_elem_list) == 0:
+                    asn_elem_list = group_elem.xpath("peer-as")
+                if len(asn_elem_list) > 0:
+                    asn_elem = asn_elem_list[0]
+                    asn_tag = taglib.tag("autonomous system", asn_elem.text,
+                                         sort_name='%010d' % int(asn_elem.text))
+                    asn_tag.implied_by(peer_tag, asn_elem.sourceline)
         
     protocol = "MSDP"
-    protocolElemList = top.xpath("protocols/%s" % protocol.lower())
-    if protocolElemList:
-        protocolElem = protocolElemList[0]
-        protocolTag = "routing protocol--%s" % protocol
-        for groupElem in protocolElem.xpath("group"):
-            nameElem = groupElem.xpath("name")[0]
-            msdpGroupTag = "%s group--%s %s" % (protocol, snapshotDevice, nameElem.text)
-            for peerNameElem in groupElem.xpath("peer/name"):
-                address = IPy.IP(peerNameElem.text)
-                if address.version() == 4:
-                    addressTag = "IPv4 interface address--%s" % peerNameElem.text
-                    peerTag = "%s peer--%s" % (protocol, peerNameElem.text)
-                    ot(fn, peerNameElem.sourceline, peerTag, context=addressTag)
-                    ot(fn, peerNameElem.sourceline, peerTag, context=msdpGroupTag)
-                    ot(fn, protocolElem.sourceline, protocolTag, context=peerTag)
-            ot(fn, nameElem.sourceline, msdpGroupTag, context=snapshotDeviceTag)
-    
-    ospfVersionDict = {'OSPF':'OSPF', 'OSPF3':'OSPFv3'}
-    for ospfVersion in ospfVersionDict.keys():
-        ospfElemList = top.xpath("protocols/%s" % ospfVersion.lower())
-        if not ospfElemList:
-            break
-        ospfElem = ospfElemList[0]
-        ospfVersionLabel = ospfVersionDict[ospfVersion]
-        protocolTag = "routing protocol--%s" % ospfVersionLabel
-        for areaElem in ospfElem.xpath("area"):
-            nameElem = areaElem.xpath("name")[0]
-            ospfAreaTag = "%s area--%s" % (ospfVersionLabel, nameElem.text)
-            for interfaceNameElem in areaElem.xpath("interface/name"):
-                if interfaceNameElem.text == "all":
-                    interfaceTags = allInterfaceTags
+    protocol_elem_list = top.xpath("protocols/%s" % protocol.lower())
+    if protocol_elem_list:
+        protocol_elem = protocol_elem_list[0]
+        protocol_tag = taglib.tag("routing protocol", protocol)
+        for group_elem in protocol_elem.xpath("group"):
+            name_elem = group_elem.xpath("name")[0]
+            group_tag = taglib.tag("%s group" % protocol,
+                                   "%s %s" % (device_tag.name, name_elem.text))
+            group_tag.implied_by(device_tag, name_elem.sourceline)
+            for peer_name_elem in group_elem.xpath("peer/name"):
+                peer_tag = taglib.tag("%s peer" % protocol, peer_name_elem.text)
+                address_tag = taglib.ip_address_tag(peer_name_elem.text)
+                peer_tag.implied_by(address_tag, peer_name_elem.sourceline)
+                peer_tag.implied_by(group_tag, peer_name_elem.sourceline)
+                peer_tag.implies(protocol_tag, peer_name_elem.sourceline)
+
+    ospf_version_dict = {'ospf':'OSPF', 'ospf3':'OSPFv3'}
+    for protocol_key, protocol in ospf_version_dict.items():
+        protocol_elem_list = top.xpath("protocols/%s" % protocol_key)
+        if not protocol_elem_list:
+            continue
+        protocol_elem = protocol_elem_list[0]
+        protocol_tag = taglib.tag("routing protocol", protocol)
+        for area_elem in protocol_elem.xpath("area"):
+            name_elem = area_elem.xpath("name")[0]
+            area_tag = taglib.tag("%s area" % protocol, name_elem.text)
+            area_tag.implies(protocol_tag, name_elem.sourceline)
+            for interface_name_elem in area_elem.xpath("interface/name"):
+                if interface_name_elem.text == "all":
+                    interface_tags = all_interface_tags
                 else:
-                    interfaceTags = ["interface--%s %s" % (snapshotDevice, interfaceNameElem.text)]
-                for tag in interfaceTags:
-                    ot(fn, interfaceNameElem.sourceline, ospfAreaTag, context=tag)
-            ot(fn, nameElem.sourceline, protocolTag, context=ospfAreaTag)
+                    interface_tags = [
+                        taglib.tag("interface", 
+                                   "%s %s" % (device_tag.name, 
+                                              interface_name_elem.text))]
+                for t in interface_tags:
+                    t.implies(area_tag, interface_name_elem.sourceline)
 
     protocol = "PIM"
-    protocolElemList = top.xpath("protocols/%s" % protocol.lower())
-    if protocolElemList:
-        protocolElem = protocolElemList[0]
-        protocolTag = "routing protocol--%s" % protocol
-        for interfaceNameElem in protocolElem.xpath("interface/name"):
-            if interfaceNameElem.text == "all":
-                interfaceTags = allInterfaceTags
+    protocol_elem_list = top.xpath("protocols/%s" % protocol.lower())
+    if protocol_elem_list:
+        protocol_elem = protocol_elem_list[0]
+        protocol_tag = taglib.tag("routing protocol", protocol)
+        for interface_name_elem in protocol_elem.xpath("interface/name"):
+            if interface_name_elem.text == "all":
+                interface_tags = all_interface_tags
             else:
-                interfaceTags = ["interface--%s %s" % (snapshotDevice, interfaceNameElem.text)]
-            for tag in interfaceTags:
-                ot(fn, interfaceNameElem.sourceline, protocolTag, context=tag)
+                interface_tags = [
+                    taglib.tag("interface", 
+                               "%s %s" % (device_tag.name, 
+                                          interface_name_elem.text))]
+            for t in interface_tags:
+                t.implies(protocol_tag, interface_name_elem.sourceline)
 
-    for ripVersion in ("RIP", "RIPng"):
-        ripElemList = top.xpath("protocols/%s" % ripVersion.lower())
-        if not ripElemList:
-            break
-        ripElem = ripElemList[0]
-        protocolTag = "routing protocol--%s" % ripVersion
-        for groupElem in ripElem.xpath("group"):
-            nameElem = groupElem.xpath("name")[0]
-            ripGroupTag = "%s group--%s" % (ripVersion, nameElem.text)
-            for interfaceNameElem in groupElem.xpath("neighbor/name"):
-                if interfaceNameElem.text == "all":
-                    interfaceTags = allInterfaceTags
+    for protocol in ("RIP", "RIPng"):
+        protocol_elem_list = top.xpath("protocols/%s" % protocol.lower())
+        if not protocol_elem_list:
+            continue
+        protocol_elem = protocol_elem_list[0]
+        protocol_tag = taglib.tag("routing protocol", protocol)
+        for group_elem in protocol_elem.xpath("group"):
+            name_elem = group_elem.xpath("name")[0]
+            group_tag = taglib.tag("%s group" % protocol,name_elem.text)
+            group_tag.implies(protocol_tag, name_elem.sourceline)
+            for interface_name_elem in group_elem.xpath("neighbor/name"):
+                if interface_name_elem.text == "all":
+                    interface_tags = all_interface_tags
                 else:
-                    interfaceTags = ["interface--%s %s" % (snapshotDevice, interfaceNameElem.text)]
-                for tag in interfaceTags:
-                    ot(fn, interfaceNameElem.sourceline, ripGroupTag, context=tag)
-            ot(fn, nameElem.sourceline, protocolTag, context=ripGroupTag)
+                    interface_tags = [
+                        taglib.tag("interface", 
+                                   "%s %s" % (device_tag.name, 
+                                              interface_name_elem.text))]
+                for t in interface_tags:
+                    t.implies(group_tag, interface_name_elem.sourceline)
 
+
+def tag_matches(top, path, kind, context):
+    for e in top.xpath(path):
+        t = taglib.tag(kind, e.text)
+        t.implied_by(context, e.sourceline)
+
+
+def main():
+    filename = taglib.default_filename
+    with file(filename) as f:
+        tree = etree.parse(f)
+    top = tree.getroot()[0]
+
+    nsmap = top.nsmap
+    if None in nsmap:
+        nsmap['x'] = nsmap[None]
+        del nsmap[None]
+    
+    context = taglib.env_tags.device
+    tag_matches(top, "system/domain-name", "domain name", context)
+    tag_matches(top, "system/time-zone", "time zone", context)
+    tag_matches(top, "system/name-server/name", "name server", context)
+    tag_matches(top, "system/radius-server/name", "RADIUS server", context)
+    tag_matches(top, "system/ntp/boot-server", "NTP boot server", context)
+    tag_matches(top, "system/ntp/server/name", "NTP server", context)
+    tag_matches(top, "system/login/user/name", "user", context)
+    tag_matches(top, "snmp/community/name", "SNMP community", context)
+    
+    tag_services(top)
+    tag_interfaces(top)
+    tag_protocols(top)
+    
+    taglib.output_tagging_log()
 
 if __name__ == '__main__':
-    main(tagPatterns, serviceTags, outputInterfaceTags, outputProtocols)
+    main()

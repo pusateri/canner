@@ -44,16 +44,16 @@ def main(filename):
             return
 
         # time
-        m = re.match(r'configure sntp-client (primary|secondary) server "?([\w\d.-]+)"?', line)
+        m = re.match(r'configure sntp-client (primary|secondary) (?:server )? "?([\w\d.-]+)"?( vr [\w\d.]+)?', line)
         if m:
-            which, server = m.groups()
+            which, server, vr = m.groups()
             taglib.tag("NTP server", server).implied_by(taglib.env_tags.device, line=n)
             continue
 
         # dns
-        m = re.match(r'configure dns-client add name-server ([\w\d.-]+)', line)
+        m = re.match(r'configure dns-client add name-server ([\w\d.-]+)( vr [\w\d.]+)?', line)
         if m:
-            server = m.group(1)
+            server, vr = m.groups()
             taglib.tag("name server", server).implied_by(taglib.env_tags.device, line=n)
             continue
         m = re.match(r'configure dns-client add domain-suffix ([\w\d.-]+)', line)
@@ -174,6 +174,11 @@ def main(filename):
             service = m.group(1)
             taglib.tag("service", serviceLabelDict[service]).implied_by(taglib.env_tags.device, n)
             continue
+        m = re.match(r'configure telnet( access-profile ([\w\d.-]+))?( port ([\d]+))?( vr ([\w\d.-]+))?', line)
+        if m:
+            taglib.tag("service", "TELNET").implied_by(taglib.env_tags.device, n)
+            continue
+
 
 if __name__ == '__main__':
     main(taglib.default_filename)
