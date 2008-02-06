@@ -1,3 +1,5 @@
+Version: $Id$
+
 Canner Overview
 ===============
 

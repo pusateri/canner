@@ -1,5 +1,5 @@
 # format reStructured Text to plain text
-SRCS = tagger-api.rst
+SRCS = canner.rst tagger-api.rst
 TXTS = $(SRCS:.rst=.txt)
 
 all: $(TXTS)
