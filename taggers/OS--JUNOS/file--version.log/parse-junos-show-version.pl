@@ -1,4 +1,4 @@
-#!/usr/bin/perl -nl
+#!/usr/bin/perl -w
 
 #
 # Copyright 2007 !j Incorporated
@@ -19,9 +19,18 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id: parse-junos-show-version.pl 2 2007-12-17 21:12:04Z keith $
+# $Id: $
 
-/^JUNOS (Software Release|Base OS Software Suite) \[(.*)\]/ && do {
-    print "$ARGV:$.: OS version--JUNOS $2 {{context snapshot device--$ENV{SESSION_DEVICE}}}";
-    print "$ARGV:$.: OS--JUNOS {{context OS version--JUNOS $2}}";
-};
+my $filename = $ENV{TRIGGER_FILENAME};
+open FILE, $filename;
+
+while (<FILE>) {
+    /^JUNOS (?:Software Release|Base OS Software Suite) \[(.*)\]/ && print <<EOF
+[{
+    "location": "$filename:$.",
+    "tag": "OS version--JUNOS $1",
+    "implied_by": "snapshot device--$ENV{SESSION_DEVICE}",
+    "implies": "OS--JUNOS"
+}]
+EOF
+}

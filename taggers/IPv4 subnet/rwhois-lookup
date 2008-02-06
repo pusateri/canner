@@ -19,14 +19,15 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id: rwhois-lookup 13 2008-01-29 16:19:21Z keith $
+# $Id: $
 
 from __future__ import with_statement
 import os, re, sys, socket
 from itertools import count, izip
 from collections import defaultdict
-from canner import taglib
 import IPy
+from canner import taglib
+from canner.taglib import Tag
 
 
 def rwhois_query(query):
@@ -71,12 +72,8 @@ def rwhois_query(query):
     return result
 
 
-def extract_tags(context, src, filename):
-    def ot(line, qname, properties=None, **kw):
-        taglib.output_tag(filename, line, qname, properties, **kw)
-
-    m = re.match(r"IPv4 subnet--(.*)/\d+", context)
-    subnet_ip = IPy.IP(m.group(1))
+def extract_tags(src, context):
+    subnet_ip = IPy.IP(context.name)
     
     attrs = defaultdict(list)
     in_context = False
@@ -86,7 +83,7 @@ def extract_tags(context, src, filename):
         if line.startswith("#TAG: "):
             if in_context:
                 return True
-            if line == "#TAG: " + context:
+            if line == "#TAG: " + context.qname:
                 in_context = True
 
         if not in_context:
@@ -100,24 +97,21 @@ def extract_tags(context, src, filename):
             for ln, val in attrs["IP-Network"]:
                 registered_ip = IPy.IP(val)
                 if subnet_ip in registered_ip:
-                    reg_net_tag = "registered network subnet--" + val
-                    reg_net_props = taglib.ip_subnet(val)[1]
+                    reg_net_tag = Tag.ip_subnet(val, "registered network subnet")
                     break
 
             if not reg_net_tag:
-                print "# could not find IP-Network for %s" % subnet_ip
+                print >>sys.stderr, "# could not find IP-Network for %s" % subnet_ip
             else:
-                ot(ln, reg_net_tag, reg_net_props, context=context)
-                
+                reg_net_tag.implied_by(context, ln)
+
                 ln, val = attrs["ID"][0]
-                id_tag = "registered network--" + val
-                ot(ln, id_tag, context=reg_net_tag)
+                Tag("registered network", val).implied_by(reg_net_tag, ln)
 
                 org_names = attrs["Org-Name"] or attrs["Organization"]
                 if org_names:
                     ln, val = org_names[0]
-                    ot(ln, "registered organization--" + val,
-                     context=reg_net_tag)
+                    Tag("registered organization", val).implied_by(reg_net_tag, ln)
 
             attrs = defaultdict(list)
 
@@ -130,7 +124,7 @@ def extract_tags(context, src, filename):
         else:
             m = re.match(r"^network:(.*?)(;.)?:(.*?)$", line)
             if not m:
-                print "# unexpected line: %r" % line
+                print >>sys.stderr, "# unexpected line: %r" % line
             else:
                 name, valtype, value = m.groups()
                 attrs[name].append((linenum, value))
@@ -139,30 +133,30 @@ def extract_tags(context, src, filename):
 
 
 def main():
-    tag = os.environ["TAG"]
+    context = taglib.envtags.trigger
+    context = taglib.envtags.trigger
+    context = taglib.envtags.trigger
+    context = taglib.envtags.trigger
+    subnet = context.name
 
-    m = re.match(r"IPv4 subnet--(.*)/\d+", tag)
-    if not m:
-        print >>sys.stderr, "could not get subnet from tag"
-        sys.exit(1)
-    subnet = m.group(1)
-
-    filename = "rwhois.log"
+    taglib.default_filename = filename = "rwhois.log"
     line_counter = count(1)
-
     found = False
+
     if os.path.exists(filename):
         with open(filename) as f:
-            found = extract_tags(tag, izip(line_counter, f), filename)
+            found = extract_tags(izip(line_counter, f), context)
+
     if not found:
-        print "# result not found -- querying rwhois"
-        result = "#TAG: " + tag + "\n" + rwhois_query("IP-Network=%s" % subnet)
+        result = ("#TAG: " + context.qname + "\n" + 
+                  rwhois_query("IP-Network=" + subnet))
         with open(filename, "a") as f:
             f.write(result)
         line_counter = count(line_counter.next() - 1)
-        extract_tags(tag, izip(line_counter, result.splitlines()), filename)
-        taglib.output_tag(filename, 0, "file--" + filename)
-
+        extract_tags(izip(line_counter, result.splitlines()), context)
+        
+    Tag("file", filename).used(filename=filename)
+    taglib.output_tags()
 
 if __name__ == "__main__":
     main()

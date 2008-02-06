@@ -17,72 +17,161 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id: taglib.py 2 2007-12-17 21:12:04Z keith $
+# $Id: $
 
 from __future__ import with_statement
 
+import os
 import sys
+import re
+import simplejson
 import IPy; IPy.check_addr_prefixlen = False
-from lxml import etree
 
-def const(text):
-    def _const(element):
-        return text, None
-    return _const
+_tags = []
 
-def tag(element):
-    return element.tag, None
 
-def text(element):
-    return element.text, None
+class Tag(object):
+    @classmethod
+    def ip_address(cls, address, kind=None, **kw):
+        ip = IPy.IP(address)
+        name = ip.strCompressed(wantprefixlen=0)
+        if ip.version() == 4:
+            if not kind: kind = "IPv4 address"
+            sort_name = "%08x" % ip.int()
+        else:
+            if not kind: kind = "IPv6 address"
+            sort_name = "%032x" % ip.int()
+        return cls(kind, name, sort_name=sort_name, **kw)
 
-def ip_address(text):
-    ip = IPy.IP(text)
-    sortName = ("%08x" if ip.version() == 4 else "%032x") % ip.int()
-    return ip.strCompressed(wantprefixlen=0), dict(sortName=sortName)
+    @classmethod
+    def ip_subnet(cls, address, kind=None, **kw):
+        ip = IPy.IP(address, make_net=True)
+        ip.NoPrefixForSingleIp = False
+        name = ip.strCompressed()
+        if ip.version() == 4:
+            if not kind: kind = "IPv4 subnet"
+            sort_name = "%08x/%02d" % (ip.int(), ip.prefixlen())
+        else:
+            if not kind: kind = "IPv6 subnet"
+            sort_name = "%032x/%03d" % (ip.int(), ip.prefixlen())
+        return cls(kind, name, sort_name=sort_name, **kw)    
+    
+    
+    def __init__(self, kind=None, name=None, qname=None, 
+                 sort_name=None, display_name=None):
+        if qname:
+            if kind or name:
+                raise ValueError("kind and name cannot be used with qname")
+            self.qname = qname
+            self.kind, _, self.name = qname.partition("--")
+        else:
+            if not kind or not name:
+                raise ValueError("kind and name must both be specified")
+            self.qname = "%s--%s" % (kind, name)
+            self.kind, self.name = kind, name
+        self.sort_name = sort_name
+        self.display_name = display_name
+        self.entries = dict()
+        
+        global _tags
+        _tags.append(self)
 
-def ip_subnet(text):
-    ip = IPy.IP(text, make_net=True)
-    ip.NoPrefixForSingleIp = False
-    sortName = ("%08x" if ip.version() == 4 else "%032x") % ip.int()
-    return ip.strCompressed(), dict(sortName=sortName)
+    def used(self, line=None, filename=None, sort_name=None, display_name=None):
+        entry = self._entry_for_location(line, filename)
+        if sort_name:
+            self.sort_name = sort_name
+            entry["sort name"] = sort_name
+        if display_name:
+            self.display_name = display_name
+            entry["display name"] = display_name
+        return self
 
-def protocol_name(name):
-    protocolLabelDict = {'bgp':'BGP', 'dhcp':'DHCP', 'finger':'FINGER', 'ftp':'FTP',
-                         'http':'HTTP', 'https':'HTTPS', 'igmp':'IGMP', 'MLD':'MLD', 'mpls':'MPLS',
-                         'msdp':'MSDP', 'netconf':'NETCONF', 'ospf':'OSPF', 'pim':'PIM', 'rip':'RIP',
-                         'ripng':'RIPng', 'scp':'SCP', 'service-deployment':'SDXD', 'ssh':'SSH',
-                         'telnet':'TELNET', 'telnets':'TELNETS', 'xnm-clear-text':'XNM',
-                         'xnm-ssl':'XNMS'}
-    return protocolLabelDict.get(name, name)
+    def implies(self, tag, line=None, filename=None):
+        entry = self._entry_for_location(line, filename)
+        try:
+            lst = entry["implies"]
+            if not isinstance(lst, list):
+                lst = [lst]
+            lst.append(tag.qname)
+        except KeyError:
+            entry["implies"] = tag.qname
+        return self
 
-def output_tag(filename, line, qname, properties=None, **kw):
-    properties = properties or {}
-    properties.update(kw)
-    propString = " ".join("{{%s %s}}" % (k, v) for k, v in properties.items())
-    print "%s:%d: %s %s" % (filename, line, qname, propString)
+    def implied_by(self, tag, line=None, filename=None):
+        entry = self._entry_for_location(line, filename)
+        try:
+            lst = entry["implied by"]
+            if not isinstance(lst, list):
+                lst = [lst]
+            lst.append(tag.qname)
+        except KeyError:
+            entry["implied by"] = tag.qname
+        return self
+        
 
-def output_tags(patterns, top, filename, **kw):
-    nsmap = top.nsmap
-    if None in nsmap:
-        nsmap['x'] = nsmap[None]
-        del nsmap[None]
+    def _location(self, line=None, filename=None):
+        global default_filename
+        if not filename:
+            filename = default_filename
+        if filename and line:
+            return "%s:%d" % (filename, line)
+        elif filename:
+            return filename
+        raise ValueError("unknown location")
+        
+    def _entry_for_location(self, line, filename):
+        location = self._location(line, filename)
+        try:
+            return self.entries[location]
+        except KeyError:
+            entry = dict(tag=self.qname, location=location)
+            if not self.entries:  # This will be the first entry
+                if self.sort_name:
+                    entry["sort name"] = self.sort_name
+                if self.display_name:
+                    entry["display name"] = self.display_name
+            self.entries[location] = entry
+            return entry
 
-    for pattern, kind, func in patterns:
-        for e in top.xpath(pattern, nsmap):
-            name, properties = func(e)
-            tag = "%s--%s" % (kind, name)
-            output_tag(filename, e.sourceline, tag, properties, **kw)
 
-def main(patterns, *args):
-    import os
-    snapshotDevice = os.environ.get("SESSION_DEVICE", "unknown")
-    snapshotDeviceTag = "snapshot device--%s" % snapshotDevice
 
-    filename = sys.argv[1]
-    with file(filename) as f:
-        tree = etree.parse(f)
-    top = tree.getroot()[0]
-    output_tags(patterns, top, filename, context=snapshotDeviceTag)
-    for func in args:
-        func(top, filename)
+def output_tags():
+    all_entries = []
+    for tag in _tags:
+        all_entries.extend(tag.entries.values())
+    simplejson.dump(all_entries, sys.stdout, indent=2, sort_keys=True)
+    print
+
+
+
+class _EnvironmentTags(object):
+    @property
+    def snapshot(self):
+        try:
+            return self._snapshot
+        except AttributeError:
+            session_id = os.environ.get("SESSION_ID", "unknown")
+            self._snapshot = Tag("snapshot ID", session_id)
+            return self._snapshot
+        
+    @property
+    def device(self):
+        try:
+            return self._device
+        except AttributeError:
+            session_device = os.environ.get("SESSION_DEVICE", "unknown")
+            self._device = Tag("snapshot device", session_device)
+            return self._device
+        
+    @property
+    def trigger(self):
+        try:
+            return self._trigger
+        except AttributeError:
+            trigger = os.environ.get("TRIGGER_TAG", "unknown")
+            self._trigger = Tag(qname=trigger)
+            return self._trigger
+
+envtags = _EnvironmentTags()
+
+default_filename = os.environ.get("TRIGGER_FILENAME", None)
