@@ -23,7 +23,7 @@
 
 cat <<EOF
 [{
-    "tag": "vendor--Cisco",
+    "tag": "vendor--Juniper",
     "location": "$TRIGGER_FILENAME",
     "implied_by": "snapshot device--$SESSION_DEVICE"
 }]

@@ -126,7 +126,7 @@ def main(filename):
         # protocols
         m = re.match(r'enable (bgp|igmp|MLD|msdp|rip|ripng)$', line)
         if m:
-            protocolTag = taglib.tag("routing protocol", protocol_name(m.group(1)))
+            protocolTag = taglib.tag("routing protocol", taglib.protocol_name(m.group(1)))
             protocolTag.implied_by(taglib.env_tags.device, line=n)
             continue
         m = re.match(r'enable (igmp|MLD) snooping.*', line)

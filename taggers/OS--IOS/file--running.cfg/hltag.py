@@ -63,13 +63,6 @@ class TagsFormatter(Formatter):
             pass
 
 
-    def outputTag(self, tag, lineNum=None, **props):
-        if lineNum is None:
-            lineNum = self.lineNum
-        propStr = " ".join("{{%s %s}}" % (k, v) for k, v in props.items() if v)
-        self.outFile.write(self.tagFormat % (lineNum, tag, propStr))
-
-
     def wrapSource(self, tokenSource):
         for ttype, value in tokenSource:
             if ttype not in Text or ttype in Whitespace:
@@ -99,7 +92,7 @@ class TagsFormatter(Formatter):
             msg = 'expected %s, got %s %s' % (
                 tokenType, self.tokenType, repr(self.tokenValue))
             fn, ln, fn, txt = traceback.extract_stack(limit=2)[0]
-            self.outFile.write('#error: %s:%d: %s (\'%s\' line %d)\n' % (
+            sys.stderr.write('error: %s:%d: %s (\'%s\' line %d)\n' % (
                 self.fileName, self.lineNum, msg, fn, ln))
             raise UnexpectedToken(msg)
         return value

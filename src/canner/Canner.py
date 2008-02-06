@@ -34,6 +34,7 @@ import subprocess
 import socket
 import uuid
 import base64
+import simplejson
 from canner import plistlib
 from canner.Session import Session
 
@@ -104,7 +105,7 @@ class Canner(object):
 
     def addTagRef(self, tag, tagger="canner", path="", line=0,
                   properties={}, **kw):
-        tagRef = dict(tagger=tagger, filename=path, line=int(line))
+        tagRef = dict(tagger=tagger, filename=path, line=int(line or 0))
         tagRef.update(properties)
         tagRef.update(kw)
         self.tagRefs[tag].append(tagRef)
@@ -170,13 +171,12 @@ class Canner(object):
         self.logger.info("running tagger '%s'" % self._stripTagDir(tagger))
 
         env = dict(os.environ)
-        env["TAG"] = tag
-        for k, v in tagRef.iteritems():
-            env["TAG_%s" % re.sub(r'([A-Z])', r'_\1', k).upper()] = str(v)
+        env["TRIGGER_KIND"], _, env["TRIGGER_NAME"] = tag.partition("--")
+        env["TRIGGER_FILENAME"] = tagRef["filename"]
         for k, v in self.sessionInfo.iteritems():
             env["SESSION_%s" % re.sub(r'([A-Z])', r'_\1', k).upper()] = str(v)
 
-        p = subprocess.Popen([tagger, tagRef["filename"]], env=env,
+        p = subprocess.Popen([tagger], env=env,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         tagData, errors = p.communicate();
 
@@ -204,24 +204,26 @@ class Canner(object):
                               (self._stripTagDir(tagger), errors))
             return
 
-        for tagLine in tagData.split("\n"):
-            if tagLine.startswith('#') or tagLine.strip() == '':
-                continue
-
-            properties = {}
-            def extractProperties(match):
-                properties[match.group(1)] = match.group(2)
-                return ""
-            tagLine = re.sub(r'{{(\S+)\s(.*?)}}', extractProperties, tagLine)
-
-            path, lineNum, tag = tagLine.split(':', 2)
-            tag = tag.strip()
-
+        taggingLog = simplejson.loads(tagData)
+        for entry in taggingLog:
+            tag = entry["tag"]
             if tag.startswith("file--"):
                 self.addFileTagRef(tag[6:])
             else:
-                self.addTagRef(tag, taggerName, path, lineNum, properties)
+                filename, _, lineNum = entry["location"].partition(":")
 
+                properties = dict()
+                if "sort_name" in entry:
+                    properties["sortName"] = entry["sort_name"]
+                if "display_name" in entry:
+                    properties["displayName"] = entry["display_name"]
+                if "implied_by" in entry:
+                    properties["context"] = entry["implied_by"]
+                self.addTagRef(tag, taggerName, filename, lineNum, properties)
+
+                if "implies" in entry:
+                    self.addTagRef(entry["implies"], taggerName, filename,
+                                   lineNum, context=tag)
 
     def makePackageStructure(self):
         dirs = (
@@ -337,3 +339,7 @@ class Canner(object):
 
         plist = os.path.join("Contents", "Info.plist")
         plistlib.writePlist(info, plist)
+        
+        info["timestamp"] = self.sessionInfo["timestamp"]
+        with open(os.path.join("Contents", "info.json"), "w") as f:
+            simplejson.dump(info, f, sort_keys=True, indent=2)

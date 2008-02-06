@@ -159,8 +159,9 @@ class _EnvironmentTags(object):
         try:
             return self._trigger
         except AttributeError:
-            trigger = os.environ.get("TRIGGER_TAG", "unknown")
-            self._trigger = tag(qname=trigger)
+            kind = os.environ.get("TRIGGER_KIND", "unknown")
+            name = os.environ.get("TRIGGER_NAME", "unkonwn")
+            self._trigger = tag(kind, name)
             return self._trigger
 
 env_tags = _EnvironmentTags()
