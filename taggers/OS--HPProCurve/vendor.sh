@@ -19,6 +19,6 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id$
+# $Id: vendor.sh 2 2007-12-17 21:12:04Z keith $
 
 echo "$1:0: vendor--HP {{context snapshot device--$SESSION_DEVICE}}"

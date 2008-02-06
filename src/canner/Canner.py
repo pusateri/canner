@@ -17,7 +17,7 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id$
+# $Id: Canner.py 9 2007-12-18 21:20:32Z pusateri $
 
 from __future__ import with_statement
 

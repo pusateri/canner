@@ -8,7 +8,7 @@
 #
 
 # For Canner:
-# $Id$
+# $Id: plistlib.py 2 2007-12-17 21:12:04Z keith $
 
 """plistlib.py -- a tool to generate and parse MacOSX .plist files.
 

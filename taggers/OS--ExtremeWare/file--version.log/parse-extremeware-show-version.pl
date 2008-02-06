@@ -19,7 +19,7 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id$
+# $Id: parse-extremeware-show-version.pl 2 2007-12-17 21:12:04Z keith $
 
 /^Image\s*:\s*ExtremeWare\s+Version\s+(.*?)\s/i && do {
     print "$ARGV:$.: OS version--ExtremeWare $1 {{context snapshot device--$ENV{SESSION_DEVICE}}}";

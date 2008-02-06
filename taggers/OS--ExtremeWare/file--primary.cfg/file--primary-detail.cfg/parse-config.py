@@ -20,7 +20,7 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id$
+# $Id: parse-config.py 11 2008-01-25 14:44:19Z pusateri $
 
 """
 parse-config.py

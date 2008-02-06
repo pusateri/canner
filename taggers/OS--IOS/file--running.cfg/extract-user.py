@@ -19,7 +19,7 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id$
+# $Id: extract-user.py 2 2007-12-17 21:12:04Z keith $
 
 import sys, os, re
 from canner import taglib

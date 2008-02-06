@@ -17,7 +17,7 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id$
+# $Id: __init__.py 2 2007-12-17 21:12:04Z keith $
 
 from .IosLexer import IosLexer
 from .JunosLexer import JunosLexer

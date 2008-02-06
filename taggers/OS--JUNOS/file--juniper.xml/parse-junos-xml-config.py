@@ -19,7 +19,7 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id$
+# $Id: parse-junos-xml-config.py 7 2007-12-17 21:43:06Z pusateri $
 
 from canner.taglib import *
 import re

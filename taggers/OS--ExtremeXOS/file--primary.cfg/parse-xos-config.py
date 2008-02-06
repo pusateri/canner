@@ -20,7 +20,7 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id$
+# $Id: parse-xos-config.py 3 2007-12-17 21:12:31Z keith $
 
 """
 parse-extremexos-config.py

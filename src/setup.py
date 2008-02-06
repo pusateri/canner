@@ -17,7 +17,7 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id$
+# $Id: setup.py 2 2007-12-17 21:12:04Z keith $
 
 """
 Canner

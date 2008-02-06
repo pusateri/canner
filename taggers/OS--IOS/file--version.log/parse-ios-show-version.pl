@@ -19,7 +19,7 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id$
+# $Id: parse-ios-show-version.pl 2 2007-12-17 21:12:04Z keith $
 
 /^.*IOS.*Software.*\((.*?)\).*Version\s+([^,]+)/ && do {
     print "$ARGV:$.: IOS type--$1 {{context snapshot device--$ENV{SESSION_DEVICE}}}";
