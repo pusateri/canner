@@ -22,15 +22,15 @@
 # $Id: parse-extremexos-show-version.pl 2 2007-12-17 21:12:04Z keith $
 
 @ARGV = ($ENV{TRIGGER_FILENAME});
+print "[\n";
 while (<>) {
     /^Image\s*:\s*ExtremeWare\s+Version\s+(.*?)\s/i && print <<EOF;
-[
     {
         "location": "$ARGV:$.",
         "tag": "OS version--ExtremeXOS $1",
-        "implied_by": "snapshot device--$ENV{SESSION_DEVICE}",
+        "implied_by": "device--$ENV{SESSION_DEVICE}",
         "implies": "OS--ExtremeXOS"
     }
-]
 EOF
 }
+print "]\n";
