@@ -28,7 +28,7 @@ while (<>) {
     {
         "location": "$ARGV:$.",
         "tag": "IOS type--$1",
-        "implied_by": "snapshot device--$ENV{SESSION_DEVICE}"
+        "implied_by": "device--$ENV{SESSION_DEVICE}"
     },
     {
         "location": "$ARGV:$.",
@@ -41,7 +41,7 @@ EOF
     {
         "location": "$ARGV:$.",
         "tag": "system image file--$1",
-        "implied_by": "snapshot device--$ENV{SESSION_DEVICE}"
+        "implied_by": "device--$ENV{SESSION_DEVICE}"
     }
 ]
 EOF

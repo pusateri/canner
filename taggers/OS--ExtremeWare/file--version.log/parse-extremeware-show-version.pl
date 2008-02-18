@@ -28,7 +28,7 @@ while (<>) {
     {
         "location": "$ARGV:$.",
         "tag": "OS version--ExtremeWare $1",
-        "implied_by": "snapshot device--$ENV{SESSION_DEVICE}",
+        "implied_by": "device--$ENV{SESSION_DEVICE}",
         "implies": "OS--ExtremeWare"
     }
 ]

@@ -25,6 +25,6 @@ cat <<EOF
 [{
     "tag": "vendor--HP",
     "location": "$TRIGGER_FILENAME",
-    "implied_by": "snapshot device--$SESSION_DEVICE"
+    "implied_by": "device--$SESSION_DEVICE"
 }]
 EOF

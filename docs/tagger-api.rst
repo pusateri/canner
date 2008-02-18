@@ -101,6 +101,8 @@ A non-exhaustive list of tag kinds can be found below. This list will constantly
 
   config user
 
+  device
+
   domain name
 
   file
@@ -157,11 +159,9 @@ A non-exhaustive list of tag kinds can be found below. This list will constantly
 
   service
 
+  snapshot
+
   snapshot date
-
-  snapshot device
-
-  snapshot ID
 
   snapshot month
 

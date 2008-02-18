@@ -142,7 +142,7 @@ class Canner(object):
         with open(outFilename, 'w') as f:
             result = pygments.highlight(content, lexer, formatter, f)
 
-        ctx = "snapshot ID--" + self.sessionInfo["id"]
+        ctx = "snapshot--" + self.sessionInfo["id"]
         # if command:
         #     cmdTag = "command--" + command
         #     self.addTagRef(cmdTag, "canner", filename, context=ctx)

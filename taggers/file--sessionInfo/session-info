@@ -35,12 +35,12 @@ format_ts = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S").strftime
 ts = format_ts("%Y-%m-%dT%H:%M:%S")
 ts_display = format_ts("%Y-%m-%d %H:%M")
 
-sess_tag = taglib.tag("snapshot ID", sid,
+sess_tag = taglib.tag("snapshot", sid,
                       sort_name="%s @ %s" % (device, ts),
                       display_name="%s @ %s" % (device, ts_display))
 sess_tag.used()
                       
-dev_tag = taglib.tag("snapshot device", device)
+dev_tag = taglib.tag("device", device)
 dev_tag.implied_by(sess_tag)
 
 taglib.tag("snapshot user", user).implied_by(sess_tag)

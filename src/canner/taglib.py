@@ -142,7 +142,7 @@ class _EnvironmentTags(object):
             return self._snapshot
         except AttributeError:
             session_id = os.environ.get("SESSION_ID", "unknown")
-            self._snapshot = tag("snapshot ID", session_id)
+            self._snapshot = tag("snapshot", session_id)
             return self._snapshot
         
     @property
@@ -151,7 +151,7 @@ class _EnvironmentTags(object):
             return self._device
         except AttributeError:
             session_device = os.environ.get("SESSION_DEVICE", "unknown")
-            self._device = tag("snapshot device", session_device)
+            self._device = tag("device", session_device)
             return self._device
         
     @property
