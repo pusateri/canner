@@ -41,6 +41,11 @@ def handleOptions():
     usage = 'usage: %prog [options] device...'
     parser = OptionParser(usage)
 
+    parser.set_defaults(useCannerRC=True)
+    parser.add_option("--norc", dest="useCannerRC",
+                      action="store_false",
+                      help="ignore ~/.cannerrc file")
+                      
     parser.set_defaults(verbosity=20)
     parser.add_option("-q", "--quiet", dest="verbosity", 
                       action="store_const", const=30),
@@ -191,7 +196,8 @@ def can(options, devices):
                           password=options.password, 
                           execPassword=options.execPassword, 
                           command=options.connectCommand,
-                          shouldLog=options.logSession)
+                          shouldLog=options.logSession,
+                          useCannerRC=options.useCannerRC)
         if options.timeout:
             session.timeout = options.timeout
     
