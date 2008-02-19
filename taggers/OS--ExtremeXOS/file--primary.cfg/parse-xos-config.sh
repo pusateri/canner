@@ -19,6 +19,4 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id: parse-xos-config.py 3 2007-12-17 21:12:31Z keith $
-
 exec $(dirname "$0")/../../OS--ExtremeWare/file--primary.cfg/file--primary-detail.cfg/parse-config.py "$@"

@@ -1,5 +1,3 @@
-:Version: $Id$
-
 Tagger Filter API Version 1.0
 =============================
 

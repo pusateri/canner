@@ -16,5 +16,3 @@
 # You should have received a copy of the GNU General Public License
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
-
-# $Id: __init__.py 2 2007-12-17 21:12:04Z keith $

@@ -19,8 +19,6 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id: $
-
 from __future__ import with_statement
 import os, re, sys, socket
 from itertools import count, izip
@@ -132,9 +130,6 @@ def extract_tags(src, context):
 
 
 def main():
-    context = taglib.env_tags.trigger
-    context = taglib.env_tags.trigger
-    context = taglib.env_tags.trigger
     context = taglib.env_tags.trigger
     subnet = context.name
 

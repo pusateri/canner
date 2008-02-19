@@ -19,8 +19,6 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id: tagit.py 3 2007-12-17 21:12:31Z keith $
-
 from __future__ import with_statement
 
 from canner import taglib

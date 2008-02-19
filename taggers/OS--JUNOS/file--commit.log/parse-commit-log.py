@@ -19,8 +19,6 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id: parse-commit-log.py 2 2007-12-17 21:12:04Z keith $
-
 import sys, os, re
 from canner import taglib
 

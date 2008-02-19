@@ -17,8 +17,6 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id: Session.py 12 2008-01-25 19:52:56Z pusateri $
-
 import ConfigParser
 import difflib
 import logging

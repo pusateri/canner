@@ -19,8 +19,6 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id: parse-junos-xml-config.py 7 2007-12-17 21:43:06Z pusateri $
-
 from __future__ import with_statement
 
 import re

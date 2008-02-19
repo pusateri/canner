@@ -7,9 +7,6 @@
 # Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007 Python Software Foundation; All Rights Reserved
 #
 
-# For Canner:
-# $Id: plistlib.py 2 2007-12-17 21:12:04Z keith $
-
 """plistlib.py -- a tool to generate and parse MacOSX .plist files.
 
 The PropertList (.plist) file format is a simple XML pickle supporting

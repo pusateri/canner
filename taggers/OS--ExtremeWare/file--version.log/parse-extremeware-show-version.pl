@@ -19,8 +19,6 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id: parse-extremeware-show-version.pl 2 2007-12-17 21:12:04Z keith $
-
 @ARGV = ($ENV{TRIGGER_FILENAME});
 while (<>) {
     /^Image\s*:\s*ExtremeWare\s+Version\s+(.*?)\s/i && print <<EOF;

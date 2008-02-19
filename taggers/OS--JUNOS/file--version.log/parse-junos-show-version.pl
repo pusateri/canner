@@ -19,8 +19,6 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id: $
-
 @ARGV = ($ENV{TRIGGER_FILENAME});
 while (<>) {
     /^JUNOS (?:Software Release|Base OS Software Suite) \[(.*)\]/ && print <<EOF;

@@ -17,8 +17,6 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# $Id: IosLexer.py 2 2007-12-17 21:12:04Z keith $
-
 from pygments.lexer import RegexLexer, bygroups, include
 from pygments.token import *
 import IPy
