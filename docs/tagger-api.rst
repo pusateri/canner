@@ -81,7 +81,7 @@ In order to execute a command on a device, a new tag sub-directory is created of
 
 Well known Tag Kinds
 --------------------
-A non-exhaustive list of tag kinds can be found below. This list will constantly be growing as new taggers are written, submitted to the project, and merged from other sources. New kinds can be defined at any time by any one but unnecessary duplication is discouraged to maximize comparisons since only tags of like kinds can be compared.
+A non-exhaustive list of tag kinds can be found below. This list will constantly be growing as new taggers are written, submitted to the project, and merged from other sources. New kinds can be defined at any time by anyone but unnecessary duplication is discouraged to maximize comparisons since only tags of like kinds can be compared.
 
   address family 
   
