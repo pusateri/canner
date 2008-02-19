@@ -118,18 +118,19 @@ class Canner(object):
                 self.loadTagDir(pendingTag, path)
                 del self.pendingTagDirs[t]
 
-    def addFileTagRef(self, filename, content=None, command=None):
+    def addFile(self, filename, content=None):
         if content is not None:
             with open(filename, "w") as f:
                 f.write(content)
         else:
             with open(filename) as f:
                 content = f.read()
-
         try:
-            lexer = pygments.lexers.guess_lexer_for_filename(filename, content, stripnl=False)
+            lexer = pygments.lexers.guess_lexer_for_filename(filename, content, 
+                                                             stripnl=False)
         except pygments.util.ClassNotFound:
-            lexer = pygments.lexers.get_lexer_for_mimetype('text/plain', stripnl=False)
+            lexer = pygments.lexers.get_lexer_for_mimetype('text/plain', 
+                                                           stripnl=False)
         formatter = pygments.formatters.get_formatter_by_name(
                 'canner', full=True, encoding='utf-8',
                 linenos='inline', cssfile='code-default.css')
@@ -140,11 +141,9 @@ class Canner(object):
         with open(outFilename, 'w') as f:
             result = pygments.highlight(content, lexer, formatter, f)
 
+    def addFileTagRef(self, filename, content=None):
+        self.addFile(filename, content)
         ctx = "snapshot--" + self.sessionInfo["id"]
-        # if command:
-        #     cmdTag = "command--" + command
-        #     self.addTagRef(cmdTag, "canner", filename, context=ctx)
-        #     ctx = "command--" + cmdTag
         self.addTagRef("file--" + filename, "canner", filename, context=ctx)
 
     def _stripTagDir(self, path):
@@ -184,25 +183,54 @@ class Canner(object):
                          "%03d--%s.log" % (self.logFileNumber, taggerName))
         self.logFileNumber += 1;
 
+        taggingLog = None
+        taggingError = None
+        
         with open(logFilename, "w") as f:
-            print >>f, "## ", tagger
-            print >>f, "##"
+            print >>f, "===", tagger
+            print >>f
+            print >>f, "=== Environment"
+            print >>f
             for k in sorted(env):
-                print >>f, "## %s=%s" % (k, env[k])
-            print >>f, ""
+                print >>f, "%s=%s" % (k, env[k])
+            print >>f
+            print >>f
+            print >>f, "=== Tag Data (stdout)"
+            print >>f
             f.write(tagData)
             if errors:
-                f.write("\n## error output:")
-                f.write("\n# ")
-                f.write("\n# ".join(errors.split("\n")))
-                f.write("\n")
+                print >>f
+                print >>f
+                print >>f, "=== Error Output"
+                print >>f
+                f.write(errors)
+            print >>f
+            print >>f
 
-        if p.returncode != 0:
-            self.logger.error("error running tagger '%s':\n%s" %
-                              (self._stripTagDir(tagger), errors))
+            if p.returncode == 0:
+                print >>f, "=== Process exited normally"
+                try:
+                    taggingLog = simplejson.loads(tagData)
+                except ValueError, e:
+                    taggingError = ("error parsing output of tagger '%s':\n%s" %
+                                    (self._stripTagDir(tagger), e))
+                    print >>f
+                    print >>f
+                    print >>f, "=== Error parsing tag data"
+                    print >>f
+                    print >>f, str(e)
+            else:
+                taggingError = ("error running tagger '%s':\n%s" %
+                                (self._stripTagDir(tagger), errors))
+                print >>f, "=== Process failed: return code %d" % p.returncode
+                                
+        if taggingError:
+            self.logger.error(taggingError)
+            self.addFile(logFilename)
+            self.addTagRef("error--tagger failed", path=logFilename, 
+                           context="snapshot--" + self.sessionInfo["id"])
             return
-
-        taggingLog = simplejson.loads(tagData)
+            
         for entry in taggingLog:
             tag = entry["tag"]
             if tag.startswith("file--"):
