@@ -30,12 +30,12 @@ def main():
     m = re.compile(r'^version')
     line = startup.readline()
     lineno = 1
-    while not m.match(line):
+    while line and not m.match(line):
         line = startup.readline()
         lineno += 1
 
     line2 = running.readline()
-    while not m.match(line2):
+    while line2 and not m.match(line2):
         line2 = running.readline()
 
     m = re.compile(r'clock-period')
