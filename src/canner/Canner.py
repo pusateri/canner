@@ -282,7 +282,7 @@ class Canner(object):
             assert not os.path.exists(filename)
             content = self.session.issueCmd(command)
             if content:
-                self.addFileTagRef(filename, content, command=command)
+                self.addFileTagRef(filename, content)
 
     def _convertStandardTagsToSessionInfo(self):
         ## TODO: remove this code once all snapshots have been migrated to
