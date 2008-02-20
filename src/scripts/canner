@@ -89,11 +89,14 @@ def handleOptions():
 
     (options, args) = parser.parse_args()
 
+    handler = logging.StreamHandler()
+    handler.setLevel(options.verbosity)
     if options.verbosity >= logging.INFO:
         format = "%(levelname)-8s %(message)s"
     else:
         format = "%(asctime)s %(levelname)-8s %(message)s"
-    logging.basicConfig(level=options.verbosity, format=format)
+    handler.setFormatter(logging.Formatter(format))
+    logging.getLogger("").addHandler(handler)
 
     if options.snapname:
         if options.organize:
@@ -148,6 +151,15 @@ def handleOptions():
     return options, args
 
 
+def startDebugLogging():
+    fh = logging.FileHandler("Canner.log")
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(logging.Formatter(
+        "%(asctime)s %(name)-12s: %(levelname)-8s %(message)s"))
+    logging.getLogger("").addHandler(fh)
+    logging.getLogger("").setLevel(logging.DEBUG)
+    
+
 def retag(options, snapshots):
     startingDir = os.getcwd()
     for pkg in snapshots:
@@ -157,6 +169,9 @@ def retag(options, snapshots):
         os.chdir(os.path.join(startingDir, pkg))
         if os.path.exists("Contents"):
             shutil.rmtree("Contents")
+
+        startDebugLogging()
+
         canner = Canner(options.taggersDir)
         canner.run()
     
@@ -188,6 +203,8 @@ def can(options, devices):
             shutil.rmtree(pkg)
         os.mkdir(pkg)
         os.chdir(pkg)
+
+        startDebugLogging()
 
         session = Session(device, 
                           user=options.user, 
