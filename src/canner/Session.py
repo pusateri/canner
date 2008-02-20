@@ -87,6 +87,20 @@ class IOSPersonality(Personality):
         self.session.issueCmd("terminal width 0")
 
 
+class ProcketPersonality(Personality):
+
+    DETECT_RE = r"Procket "
+
+    osName = "Procket MSE"
+
+
+class SMCPersonality(Personality):
+
+    DETECT_RE = r"SMC\d\d\d\d"
+
+    osName = "SMC"
+
+
 class JUNOSPersonality(Personality):
 
     DETECT_RE = r"JUNOS "
