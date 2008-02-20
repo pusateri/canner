@@ -152,7 +152,9 @@ def handleOptions():
 
 
 def startDebugLogging():
-    fh = logging.FileHandler("Canner.log")
+    if not os.path.exists("Contents/Logs"):
+         os.makedirs("Contents/Logs")
+    fh = logging.FileHandler("Contents/Logs/Canner.log")
     fh.setLevel(logging.DEBUG)
     fh.setFormatter(logging.Formatter(
         "%(asctime)s %(name)-12s: %(levelname)-8s %(message)s"))
