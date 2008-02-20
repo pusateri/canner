@@ -226,6 +226,38 @@ def can(options, devices):
             session.close()
 
         
+def log_exception():
+    """
+    Log the usual traceback information, followed by a listing of all the
+    local variables in each frame.
+    
+    Inspired by: http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/52215
+    """
+    import sys, traceback
+    
+    logging.error(traceback.format_exc())
+    
+    tb = sys.exc_info()[2]
+    stack = []
+    while tb:
+        stack.append(tb.tb_frame)
+        tb = tb.tb_next
+        
+    buf = []
+    buf.append("Locals by frame (most recent call last):")
+    for fr in stack:
+        buf.append("Frame '%s' in '%s' at line %s" % (fr.f_code.co_name,
+                                                      fr.f_code.co_filename,
+                                                      fr.f_lineno))
+        for key, value in fr.f_locals.items():
+            try:                   
+                buf.append("    %s = %s" % (key, repr(value)))
+            except:
+                buf.append("    %s = <ERROR FORMATTING VALUE>" % key)
+        buf.append("")
+    logging.debug("\n".join(buf[:-1]))
+
+
 def main():
     def forceQuit(signum, frame):
         raise CannerError("caught signal %d" % signum)
@@ -238,12 +270,13 @@ def main():
         else:
             return can(options, args)
 
-    except (CannerError, SessionError), e:
-        logging.error(e)
-        sys.exit(1)
-        
     except KeyboardInterrupt:
         sys.exit(1)
+        
+    except:
+        log_exception()
+        sys.exit(1)
+
             
 if __name__ == '__main__':
     main()
