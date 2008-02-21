@@ -91,7 +91,7 @@ class ProcketPersonality(Personality):
 
     DETECT_RE = r"Procket "
 
-    osName = "Procket MSE"
+    osName = "Procket"
 
 
 class SMCPersonality(Personality):
