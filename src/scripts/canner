@@ -270,6 +270,9 @@ def main():
         else:
             return can(options, args)
 
+    except SystemExit:
+        pass
+        
     except KeyboardInterrupt:
         sys.exit(1)
         
