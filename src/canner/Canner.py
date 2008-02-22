@@ -269,7 +269,7 @@ class Canner(object):
             timestamp = self.timestamp.strftime("%Y-%m-%dT%H:%M:%S"),
             device = self.session.device,
             user = self.session.user,
-            osName = self.session.osName,
+            osName = self.session.os_name,
             )
         s = "\n".join("%s=%s" % (k, si[k]) for k in sorted(si))
         self.addFileTagRef("sessionInfo", s)

@@ -25,164 +25,7 @@ import pexpect
 import re
 import sys
 from string import Template
-
-
-class Personality(object):
-
-    inCommandInteractions = ()
-    scrubFromOutputPatterns = (
-        r"\x1b\[[0-9;]*?[a-zA-Z]",
-        r"\r",
-        )
-    failedCommandPatterns = ()
-
-    logoutCommand = "exit"
-
-    def __init__(self, session):
-        self.session = session
-        self.logger = logging.getLogger("Session.Personality")
-
-    def setupSession(self):
-        pass
-
-    def logout(self):
-        self.session.child.sendline(self.logoutCommand)
-        self.session.child.expect(pexpect.EOF)
-
-    def cleanupOutput(self, output):
-        for pattern in self.scrubFromOutputPatterns:
-            output = re.sub(pattern, "", output)
-        return output
-
-
-class IOSPersonality(Personality):
-
-    DETECT_RE = r"Cisco (IOS|Internetwork Operating System) Software"
-
-    osName = "IOS"
-    inCommandInteractions = (
-        (r"--More--", " "),
-        )
-
-    def __init__(self, session):
-        super(IOSPersonality, self).__init__(session)
-        self.isPrivilaged = False
-
-    def setupSession(self):
-        if not self.isPrivilaged:
-            self.session.child.sendline("enable")
-            index = self.session.child.expect(
-                    [r"[Pp]assword: ?\Z",
-                     pexpect.TIMEOUT,
-                     self.session.prompt])
-            if index == 0:
-                if not self.session.execPassword:
-                    raise SessionError("Exec password not specified")
-                self.session.child.sendline(self.session.execPassword)
-                self.session.child.expect(self.session.prompt)
-            if index == 1:
-                raise SessionError("Problem entering exec mode")
-            self.isPrivilaged = True
-        self.session.issueCmd("terminal length 0")
-        self.session.issueCmd("terminal width 0")
-
-
-class ProcketPersonality(Personality):
-
-    DETECT_RE = r"Procket "
-
-    osName = "Procket"
-
-
-class SMCPersonality(Personality):
-
-    DETECT_RE = r"SMC\d\d\d\d"
-
-    osName = "SMC"
-
-
-class JUNOSPersonality(Personality):
-
-    DETECT_RE = r"JUNOS "
-
-    osName = "JUNOS"
-
-    def setupSession(self):
-        self.session.issueCmd("set cli screen-length 0")
-        self.session.issueCmd("set cli screen-width 0")
-
-
-class ExtremeWarePersonality(Personality):
-
-    DETECT_RE = r"(?i)Image.*ExtremeWare"
-
-    osName = "ExtremeWare"
-    inCommandInteractions = (
-        (r"Press <SPACE> to continue or <Q> to quit:", " "),
-        )
-    logoutCommand = "quit"
-
-    def logout(self):
-        self.session.child.sendline(self.logoutCommand)
-        while True:
-            index = self.session.child.expect(
-                    [pexpect.EOF,
-                     r"configuration changes\? \(y/n\)"])
-            if index == 0: break
-            elif index == 1:
-                self.session.child.sendline("n")
-
-
-class ExtremeXOSPersonality(Personality):
-    DETECT_RE = r"Image.*ExtremeXOS"
-
-    osName = "ExtremeXOS"
-    failedCommandPatterns = (
-        r"Invalid input detected",
-        )
-    logoutCommand = "quit"
-
-    def setupSession(self):
-        self.session.issueCmd("disable clipaging")
-
-    def logout(self):
-        self.session.child.sendline(self.logoutCommand)
-        while True:
-            index = self.session.child.expect(
-                    [pexpect.EOF,
-                     r"configuration changes to primary.cfg\? \(y/N\)"])
-            if index == 0: break
-            elif index == 1:
-                self.session.child.sendline("n")
-
-
-class HPProCurvePersonality(Personality):
-    # TODO: figure out how to handle files longer than 1000 lines
-    DETECT_RE = r"Image stamp"
-
-    osName = "HPProCurve"
-    logoutCommand = "logout"
-
-    def setupSession(self):
-        self.session.issueCmd("terminal length 1000")
-        self.session.issueCmd("terminal width 1920")
-
-    def logout(self):
-        self.session.child.sendline(self.logoutCommand)
-        while True:
-            index = self.session.child.expect(
-                    [pexpect.EOF,
-                     r"Do you want to log out \[y/n\]\? ",
-                     r"(?i)save current configuration \[y/n\]\?"])
-            if index == 0: break
-            elif index == 1:
-                self.session.child.sendline("y")
-            elif index == 2:
-                self.session.child.sendline("n")
-
-
-PERSONALITY_CLASSES = (IOSPersonality, JUNOSPersonality, ExtremeXOSPersonality,
-                       ExtremeWarePersonality, HPProCurvePersonality)
+from . import personalities
 
 
 class SessionError(StandardError):
@@ -266,8 +109,8 @@ class Session(object):
         self.login()
         self.determinePrompt()
         self.determinePersonality()
-        self.personality.setupSession()
-        self.osName = self.personality.osName
+        self.personality.setup_session()
+        self.os_name = self.personality.os_name
 
     def login(self):
         self.logger.info("logging in")
@@ -364,14 +207,13 @@ class Session(object):
         self.versionInfo = "".join(self.versionInfo.splitlines(True)[1:-1])
         self.versionInfo = re.sub(r"\r", "", self.versionInfo)
 
-        clslst = [p for p in PERSONALITY_CLASSES
-                  if re.search(p.DETECT_RE, self.versionInfo)]
-        if not clslst:
+        factories = personalities.match(self.versionInfo)
+        if not factories:
             raise SessionError("No matching personalities")
-        elif len(clslst) > 1:
-            self.logger.debug("multiple personalities: %r" % clslst)
+        elif len(factories) > 1:
+            self.logger.debug("multiple personalities: %r" % factories)
             raise SessionError("More than one personality matched")
-        self.personality = clslst[0](self)
+        self.personality = factories[0](self)
 
     def issueCmd(self, cmd):
         self.logger.info("issuing command '%s'" % cmd)
@@ -380,20 +222,20 @@ class Session(object):
         output = ""
         while True:
             patterns = [self.prompt]
-            patterns.extend(p[0] for p in self.personality.inCommandInteractions)
+            patterns.extend(p[0] for p in self.personality.in_command_interactions)
             index = self.child.expect(patterns)
             output += self.child.before
             if index == 0: break
-            if self.personality.inCommandInteractions[index-1][1]:
-                self.child.send(self.personality.inCommandInteractions[index-1][1])
+            if self.personality.in_command_interactions[index-1][1]:
+                self.child.send(self.personality.in_command_interactions[index-1][1])
 
         scrubCommandEchoPattern = r"(?s)\r?\n?" + re.escape(cmd) + r"\s*?\n"
         output, numberFound = re.subn(scrubCommandEchoPattern, "", output, 1)
         if numberFound != 1:
             raise SessionError("Problem issuing command")
 
-        output = self.personality.cleanupOutput(output)
-        for pattern in self.personality.failedCommandPatterns:
+        output = self.personality.cleanup_output(output)
+        for pattern in self.personality.failed_command_patterns:
             if re.search(pattern, output):
                 self.logger.debug("command failed\n" + output)
                 return None
