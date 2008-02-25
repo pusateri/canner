@@ -39,6 +39,7 @@ setup(
 
     packages = ["canner",
                 "canner.syntax",
+                "canner.personalities",
                 "tests",
                 ],
     scripts = ["scripts/canner"],
