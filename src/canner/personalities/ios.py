@@ -18,6 +18,7 @@
 #
 
 from . import Personality, register
+from ..Session import SessionError
 import pexpect
 
 class IOSPersonality(Personality):
@@ -42,8 +43,15 @@ class IOSPersonality(Personality):
                 if not self.session.execPassword:
                     raise SessionError("Exec password not specified")
                 self.session.child.sendline(self.session.execPassword)
-                self.session.child.expect(self.session.prompt)
-            if index == 1:
+                index = self.session.child.expect(
+                        [r"[Pp]assword: ?\Z",
+                         pexpect.TIMEOUT,
+                         self.session.prompt])
+                if index == 0:
+                    raise SessionError("Exec password not accepted")
+                if index == 1:
+                    raise SessionError("Problem sending exec password")
+            elif index == 1:
                 raise SessionError("Problem entering exec mode")
             self.is_privilaged = True
         self.session.issueCmd("terminal length 0")
