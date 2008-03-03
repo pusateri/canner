@@ -27,6 +27,7 @@ import sys
 import logging
 import shutil
 import datetime
+import traceback
 from canner.Session import Session, SessionError
 from canner.Canner import Canner
 from optparse import OptionParser
@@ -222,7 +223,15 @@ def can(options, devices):
             session.start()
             canner = Canner(options.taggersDir, session, timestamp)
             canner.run()
-        finally:
+        except Exception:
+            exc_info = sys.exc_info()
+            logging.error("caught error, attempting to close session")
+            try:
+                session.close()
+            except Exception, e:
+                logging.error("ignoring error cleaning up session: " + str(e))
+            raise exc_info[0], exc_info[1], exc_info[2]
+        else:
             session.close()
 
         
@@ -231,17 +240,16 @@ def log_exception():
     Log the usual traceback information, followed by a listing of all the
     local variables in each frame.
     
-    Inspired by: http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/52215
+    Inspired by http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/52215
     """
-    import sys, traceback
+
+    logging.debug(traceback.format_exc())
     
-    logging.error(traceback.format_exc())
-    
-    tb = sys.exc_info()[2]
+    exc_type, exc_value, exc_traceback = sys.exc_info()
     stack = []
-    while tb:
-        stack.append(tb.tb_frame)
-        tb = tb.tb_next
+    while exc_traceback:
+        stack.append(exc_traceback.tb_frame)
+        exc_traceback = exc_traceback.tb_next
         
     buf = []
     buf.append("Locals by frame (most recent call last):")
@@ -256,6 +264,9 @@ def log_exception():
                 buf.append("    %s = <ERROR FORMATTING VALUE>" % key)
         buf.append("")
     logging.debug("\n".join(buf[:-1]))
+
+    logging.error("\n".join(traceback.format_exception_only(exc_type, 
+                                                            exc_value)))
 
 
 def main():
