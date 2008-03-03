@@ -25,7 +25,6 @@ import pexpect
 import re
 import sys
 from string import Template
-from . import personalities
 
 
 class SessionError(StandardError):
@@ -194,6 +193,8 @@ class Session(object):
     def determinePersonality(self):
         self.logger.info("determining personality")
 
+        from . import personalities
+        
         self.child.sendline("show version")
         self.versionInfo = ""
         while True:
