@@ -36,59 +36,70 @@ class CannerError(Exception):
     pass
 
 
-def handleOptions():
-    usage = 'usage: %prog [options] device...'
-    parser = OptionParser(usage)
+def add_options(parser):
 
-    parser.set_defaults(useCannerRC=True)
-    parser.add_option("--norc", dest="useCannerRC",
-                      action="store_false",
-                      help="ignore ~/.cannerrc file")
-                      
-    parser.set_defaults(verbosity=20)
+    # modes
+
+    parser.add_option('-i', '--interact', dest='interact',
+                      action="store_true",
+                      help="connect to a device and interact with it")
+    parser.add_option('-r', '--retag', dest='retag',
+                      action="store_true",
+                      help="retag an existing snapshot")
+    parser.set_defaults(interact=False, retag=False)
+
+    # verbosity and logging
+
     parser.add_option("-q", "--quiet", dest="verbosity", 
                       action="store_const", const=30),
     parser.add_option("-v", "--verbose", dest="verbosity", 
                       action="store_const", const=10),
-                      
-    parser.set_defaults(force=False)
-    parser.add_option("-f", "--force", dest="force",
-                      action="store_true",
-                      help="overwrite snapshot if one already exists")
-                      
-    parser.add_option('-l', '--log', dest='logSession', action='store_true', 
-                      default=False, help='enable logging')
+    parser.add_option('-l', '--log', dest='log_session', action='store_true', 
+                      help='enable logging')
+    parser.set_defaults(verbosity=20, log=False)
 
-    parser.set_defaults(retag=False)
-    parser.add_option('-c', '--connect', dest='connectCommand',
-                      help='command used to connect to the device')
-    parser.add_option('-r', '--retag', dest='retag',
-                      action="store_true",
-                      help="retag an existing snapshot")
-                                            
-    parser.set_defaults(organize=False)
-    parser.add_option('-o', '--organize', dest='organize', action='store_true',
-                      help='automatically orgainze the snapshot')
-                      
-    parser.add_option("-n", "--name", dest="snapname", action="store",
-                      help="filename to use for the snapshot")
-                      
-    parser.add_option('-t', '--taggersdir', dest='taggersDir',
+    # initialization (RC files)
+
+    parser.add_option("--norc", dest="use_canner_rc", action="store_false",
+                      help="ignore rc files")
+    parser.add_option("--rcfile", dest="rc_files", action="append",
+                      help="use FILE instead of default rc file")
+    parser.add_option("--oneshotrc", dest="oneshot_rc_files", action="append",
+                      help="use FILE as an rc file and then delete it")
+    parser.set_defaults(use_canner_rc=True, rc_files=[], oneshot_rc_files=[])
+
+    # environment
+
+    parser.add_option('-t', '--taggersdir', dest='taggers_dir',
                       help='load taggers from DIR', metavar='DIR')
-    parser.add_option('-s', '--snapshotsdir', dest='snapshotsDir',
+    parser.add_option('-s', '--snapshotsdir', dest='snapshots_dir',
                       help='store snapshot in DIR', metavar='DIR')
 
+    # snapshot file control
+
+    parser.add_option("-n", "--name", dest="snapname", action="store",
+                      help="filename to use for the snapshot")
+    parser.add_option('-o', '--organize', dest='organize', action='store_true',
+                      help='automatically orgainze the snapshot')
+    parser.add_option("-f", "--force", dest="force", action="store_true",
+                      help="overwrite snapshot if one already exists")
+    parser.set_defaults(organize=False, force=False)
+
+    # session parameters
+
+    parser.add_option('-c', '--connect', dest='connect_command',
+                      help='command used to connect to the device')
     parser.add_option('-u', '--user', dest='user',
                       help='login USER')
     parser.add_option('-p', '--password', dest='password',
                       help='login PASSWORD')
-    parser.add_option('-e', '--exec-password', dest='execPassword', 
+    parser.add_option('-e', '--exec-password', dest='exec_password', 
                       help='exec PASSWORD')
-                      
-    parser.set_defaults(timeout=-1)
     parser.add_option("-T", "--timeout", dest="timeout", type="int")
+    parser.set_defaults(timeout=-1)
 
-    (options, args) = parser.parse_args()
+
+def process_options(parser, options, args):
 
     handler = logging.StreamHandler()
     handler.setLevel(options.verbosity)
@@ -98,61 +109,73 @@ def handleOptions():
         format = "%(asctime)s %(levelname)-8s %(message)s"
     handler.setFormatter(logging.Formatter(format))
     logging.getLogger("").addHandler(handler)
+    logging.getLogger("").setLevel(options.verbosity)
+
+    options.rc_files = [os.path.expanduser(p) for p in options.rc_files]
+    options.oneshot_rc_files = [os.path.expanduser(p) 
+                                for p in options.oneshot_rc_files]
+    if options.oneshot_rc_files:
+        options.rc_files = options.oneshot_rc_files + options.rc_files
+    if options.rc_files and not options.use_canner_rc:
+        parser.error("--norc cannot be used with --rcfile or --oneshotrc")
 
     if options.snapname:
         if options.organize:
             paser.error("a snapshot name cannot be specified in organize mode")
+        if options.interact:
+            paser.error("a snapshot name cannot be specified in interact mode")
         if options.retag:
             paser.error("a snapshot name cannot be specified in retag mode")
-        if len(args) == 0:
-            parser.error("a device is required")
-        if len(args) > 1:
-            parser.error("only one device can be specified with a snapshot name")
-    elif len(args) < 1:
+
+    if len(args) != 1:
         thing = "snapshot" if options.retag else "device"
-        parser.error("at least one %s is required" % thing)
+        parser.error("a %s is required" % thing)
     
-    if not options.taggersDir:
-        options.taggersDir = os.environ.get('TAGGERS_DIR', None)
-    if not options.taggersDir:
+    if not options.taggers_dir:
+        options.taggers_dir = os.environ.get('TAGGERS_DIR', None)
+    if not options.taggers_dir:
         dir = os.path.expanduser('~/Taggers')
         if os.path.isdir(dir):
-            options.taggersDir = dir
-    if not options.taggersDir:
-        myDir = os.path.dirname(os.path.abspath(__file__))
-        options.taggersDir = os.path.normpath(os.path.join(myDir, '../..', 
-                                                           'taggers'))
-    if not options.taggersDir:
+            options.taggers_dir = dir
+    if not options.taggers_dir:
+        my_dir = os.path.dirname(os.path.abspath(__file__))
+        options.taggers_dir = os.path.normpath(
+            os.path.join(my_dir, '../..', 'taggers'))
+    if not options.taggers_dir:
         dir = os.path.expanduser('/usr/local/share/netCannery/taggers')
         if os.path.isdir(dir):
-            options.taggersDir = dir
-    if not options.taggersDir:
+            options.taggers_dir = dir
+    if not options.taggers_dir:
         parser.error('could not determine taggers directory')
 
     if options.organize:
-        if not options.snapshotsDir:
-            options.snapshotsDir = os.environ.get('SNAPSHOTS_DIR', None)
-        if not options.snapshotsDir:
+        if options.interact:
+            parser.error("organize cannot be used with interact")
+        if options.retag:
+            parser.error("organize cannot be used with retag")
+        if not options.snapshots_dir:
+            options.snapshots_dir = os.environ.get('SNAPSHOTS_DIR', None)
+        if not options.snapshots_dir:
             nc = os.path.expanduser('~/Library/Application Support/netCannery')
             if os.path.isdir(nc):
-                options.snapshotsDir = os.path.join(nc, 'Snapshots', 
+                options.snapshots_dir = os.path.join(nc, 'Snapshots', 
                                                         'Canned Locally')
-                if not os.path.isdir(options.snapshotsDir):
-                    os.makedirs(options.snapshotsDir)
-        if not options.snapshotsDir:
+                if not os.path.isdir(options.snapshots_dir):
+                    os.makedirs(options.snapshots_dir)
+        if not options.snapshots_dir:
             dir = os.path.expanduser('~/Snapshots')
             if os.path.isdir(dir):
-                options.snapshotsDir = dir
-        if not options.snapshotsDir:
+                options.snapshots_dir = dir
+        if not options.snapshots_dir:
             parser.error('could not determine snapshots directory')
     else:
-        if options.snapshotsDir:
-            parser.error('snapshots dir invalid without --organize')
+        if options.snapshots_dir:
+            parser.error('snapshots dir invalid when not in organize mode')
     
     return options, args
 
 
-def startDebugLogging():
+def start_debug_logging():
     if not os.path.exists("Contents/Logs"):
          os.makedirs("Contents/Logs")
     fh = logging.FileHandler("Contents/Logs/Canner.log")
@@ -163,76 +186,89 @@ def startDebugLogging():
     logging.getLogger("").setLevel(logging.DEBUG)
     
 
-def retag(options, snapshots):
-    startingDir = os.getcwd()
-    for pkg in snapshots:
-        pkgdir = os.path.join(startingDir, pkg)
-        if not os.path.isdir(pkgdir):
-            raise CannerError("snapshot directory '%s' not found" % pkgdir)
-        os.chdir(os.path.join(startingDir, pkg))
-        if os.path.exists("Contents"):
-            shutil.rmtree("Contents")
+def create_session(device, options):
+    session = Session(device, 
+                      user=options.user, 
+                      password=options.password, 
+                      execPassword=options.exec_password, 
+                      command=options.connect_command,
+                      shouldLog=options.log_session,
+                      useCannerRC=options.use_canner_rc,
+                      rc_files=options.rc_files)
+    if options.timeout:
+        session.timeout = options.timeout
 
-        startDebugLogging()
+    for rcfile in options.oneshot_rc_files:
+        os.remove(rcfile)
 
-        canner = Canner(options.taggersDir)
+    return session
+
+
+def interact(options, device):
+    session = create_session(device, options)
+    session.start(login_only=True)
+    logging.info("session established")
+    session.interact()
+
+
+def retag(options, pkg):
+    starting_dir = os.getcwd()
+    pkgdir = os.path.join(starting_dir, pkg)
+    if not os.path.isdir(pkgdir):
+        raise CannerError("snapshot directory '%s' not found" % pkgdir)
+    os.chdir(os.path.join(starting_dir, pkg))
+    if os.path.exists("Contents"):
+        shutil.rmtree("Contents")
+
+    start_debug_logging()
+
+    canner = Canner(options.taggers_dir)
+    canner.run()
+    
+
+def can(options, device):
+    snapshots_dir = options.snapshots_dir or os.getcwd()
+    os.chdir(snapshots_dir)
+
+    timestamp = datetime.datetime.utcnow()
+
+    if options.snapname:
+        pkg = options.snapname
+    elif options.organize:
+        ts = timestamp.strftime
+        basedir = ts('%Y/%m/%d')
+        if not os.path.isdir(basedir):
+            os.makedirs(basedir)
+        os.chdir(basedir)
+        pkg = '%s--%s.netcan' % (device, ts('%Y-%m-%d-%H-%M-%S'))
+    else:
+        pkg = "%s.netcan" % device
+
+    if os.path.isdir(pkg) and not options.force:
+        raise CannerError("snapshot directory '%s' already exists" % pkg)
+
+    if os.path.exists(pkg):
+        shutil.rmtree(pkg)
+    os.mkdir(pkg)
+    os.chdir(pkg)
+
+    start_debug_logging()
+
+    session = create_session(device, options)
+    try:
+        session.start()
+        canner = Canner(options.taggers_dir, session, timestamp)
         canner.run()
-    
-
-def can(options, devices):
-    snapshotsDir = options.snapshotsDir or os.getcwd()
-
-    for device in devices:
-        timestamp = datetime.datetime.utcnow()
-
-        os.chdir(snapshotsDir)
-    
-        if options.snapname:
-            pkg = options.snapname
-        elif options.organize:
-            ts = timestamp.strftime
-            basedir = ts('%Y/%m/%d')
-            if not os.path.isdir(basedir):
-                os.makedirs(basedir)
-            os.chdir(basedir)
-            pkg = '%s--%s.netcan' % (device, ts('%Y-%m-%d-%H-%M-%S'))
-        else:
-            pkg = "%s.netcan" % device
-
-        if os.path.isdir(pkg) and not options.force:
-            raise CannerError("snapshot directory '%s' already exists" % pkg)
-        
-        if os.path.exists(pkg):
-            shutil.rmtree(pkg)
-        os.mkdir(pkg)
-        os.chdir(pkg)
-
-        startDebugLogging()
-
-        session = Session(device, 
-                          user=options.user, 
-                          password=options.password, 
-                          execPassword=options.execPassword, 
-                          command=options.connectCommand,
-                          shouldLog=options.logSession,
-                          useCannerRC=options.useCannerRC)
-        if options.timeout:
-            session.timeout = options.timeout
-    
+    except Exception:
+        exc_info = sys.exc_info()
+        logging.error("caught error, attempting to close session")
         try:
-            session.start()
-            canner = Canner(options.taggersDir, session, timestamp)
-            canner.run()
-        except Exception:
-            exc_info = sys.exc_info()
-            logging.error("caught error, attempting to close session")
-            try:
-                session.close()
-            except Exception, e:
-                logging.error("ignoring error cleaning up session: " + str(e))
-            raise exc_info[0], exc_info[1], exc_info[2]
-        else:
             session.close()
+        except Exception, e:
+            logging.error("ignoring error cleaning up session: " + str(e))
+        raise exc_info[0], exc_info[1], exc_info[2]
+    else:
+        session.close()
 
         
 def log_exception():
@@ -270,16 +306,23 @@ def log_exception():
 
 
 def main():
-    def forceQuit(signum, frame):
+    def force_quit(signum, frame):
         raise CannerError("caught signal %d" % signum)
-    signal.signal(signal.SIGTERM, forceQuit)
+    signal.signal(signal.SIGTERM, force_quit)
     
     try:
-        options, args = handleOptions()
-        if options.retag:
-            return retag(options, args)
+        usage = 'usage: %prog [options] device...'
+        parser = OptionParser(usage)
+        add_options(parser)
+        options, args = parser.parse_args()
+        process_options(parser, options, args)
+
+        if options.interact:
+            return interact(options, args[0])
+        elif options.retag:
+            return retag(options, args[0])
         else:
-            return can(options, args)
+            return can(options, args[0])
 
     except SystemExit:
         pass

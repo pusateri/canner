@@ -36,7 +36,8 @@ class Session(object):
     def __init__(self, device, host=None, user=None,
                  password=None, execPassword=None,
                  command=None, bastionHost=None, bastionCommand=None,
-                 useCannerRC=True, shouldLog=False):
+                 useCannerRC=True, rc_files=None,
+                 shouldLog=False):
 
         self.logger = logging.getLogger("Session")
 
@@ -46,7 +47,9 @@ class Session(object):
         }
         config = ConfigParser.SafeConfigParser(defaults)
         if useCannerRC:
-            config.read([os.path.expanduser("~/.cannerrc"), "cannerrc"])
+            if not rc_files:
+                rc_files = [os.path.expanduser("~/.cannerrc"), "cannerrc"]
+            config.read(rc_files)
         def get(option, given, default=None):
             if given is not None:
                 return given
@@ -95,7 +98,7 @@ class Session(object):
 
         self.logfile = open("pexpect.log", "w") if shouldLog else None
 
-    def start(self):
+    def start(self, login_only=False):
         self.logger.info("connecting to '%s'" % self.device)
         command = Template(self.connectCommand).substitute(
             user=self.user,
@@ -106,10 +109,12 @@ class Session(object):
         self.child.delaybeforesend = 0.5
 
         self.login()
-        self.determinePrompt()
-        self.determinePersonality()
-        self.personality.setup_session()
-        self.os_name = self.personality.os_name
+
+        if not login_only:
+            self.determinePrompt()
+            self.determinePersonality()
+            self.personality.setup_session()
+            self.os_name = self.personality.os_name
 
     def login(self):
         self.logger.info("logging in")
@@ -244,6 +249,19 @@ class Session(object):
         self.logger.debug("output\n" + output)
         return output
 
+    def interact(self):
+        import struct, fcntl, termios, signal
+
+        def setwinsize(sig=None, data=None):
+            s = struct.pack("HHHH", 0, 0, 0, 0)
+            a = struct.unpack("hhhh", fcntl.ioctl(sys.stdout.fileno(),
+                                                  termios.TIOCGWINSZ, s))
+            self.child.setwinsize(a[0], a[1])
+        signal.signal(signal.SIGWINCH, setwinsize)
+        setwinsize()
+
+        self.child.sendline("")
+        self.child.interact()
 
     def close(self):
         self.logger.info("disconnecting")
