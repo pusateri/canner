@@ -41,7 +41,7 @@ sess_tag.used()
 dev_tag = taglib.tag("device", device)
 dev_tag.implied_by(sess_tag)
 
-taglib.tag("snapshot user", user).implied_by(sess_tag)
+taglib.tag("snapshot login", user).implied_by(sess_tag)
 taglib.tag("OS", os_name).implied_by(dev_tag)
 
 t = taglib.tag("snapshot timestamp", ts, display_name=ts_display)

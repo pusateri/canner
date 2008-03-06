@@ -103,12 +103,12 @@ def extract_tags(src, context):
                 reg_net_tag.implied_by(context, ln)
 
                 ln, val = attrs["ID"][0]
-                taglib.tag("registered network", val).implied_by(reg_net_tag, ln)
+                taglib.tag("registered network ID", val).implied_by(reg_net_tag, ln)
 
                 org_names = attrs["Org-Name"] or attrs["Organization"]
                 if org_names:
                     ln, val = org_names[0]
-                    taglib.tag("registered organization", val).implied_by(reg_net_tag, ln)
+                    taglib.tag("registered network organization", val).implied_by(reg_net_tag, ln)
 
             attrs = defaultdict(list)
 

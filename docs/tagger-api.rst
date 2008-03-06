@@ -145,11 +145,11 @@ A non-exhaustive list of tag kinds can be found below. This list will constantly
 
   RADIUS server
 
-  registered network
+  registered network ID
+
+  registered network organization
 
   registered network subnet
-
-  registered organization
 
   routing protocol
 
@@ -163,7 +163,7 @@ A non-exhaustive list of tag kinds can be found below. This list will constantly
 
   snapshot timestamp
 
-  snapshot user
+  snapshot login
 
   snapshot year
 
