@@ -35,7 +35,7 @@ while (<>) {
         "implies": "OS--IOS"
     },
 EOF
-    /^System image file.*"\w+:(.*)"/ && print <<EOF;
+    /^System image file.*"\w+:\/?(.*)"/ && print <<EOF;
     {
         "location": "$ARGV:$.",
         "tag": "system image file--$1",
