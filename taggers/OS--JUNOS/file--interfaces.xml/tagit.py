@@ -61,24 +61,5 @@ for physicalElem in physicalElems:
     tag_attrs(physicalElem, "x:if-type", "interface type", physical_tag)
     tag_attrs(physicalElem, "x:link-level-type", "link-level type", physical_tag)
 
-    adminStatus = None
-    adminStatusElems = physicalElem.xpath("x:admin-status", nsmap)
-    if adminStatusElems:
-        elem = adminStatusElems[0]
-        adminStatus = elem.text
-        t = taglib.tag("admin status", adminStatus)
-        t.implied_by(physical_tag, elem.sourceline)
-
-    operStatus = None
-    operStatusElems = physicalElem.xpath("x:oper-status", nsmap)
-    if operStatusElems:
-        operStatusElem = operStatusElems[0]
-        operStatus = operStatusElem.text
-        t = taglib.tag("operational status", operStatus)
-        t.implied_by(physical_tag, operStatusElem.sourceline)
-
-    if adminStatus and operStatus and adminStatus != operStatus:
-        t = taglib.tag("flag", "operational and admin status differ")
-        t.implied_by(physical_tag, operStatusElem.sourceline)
 
 taglib.output_tagging_log()

@@ -83,8 +83,6 @@ A non-exhaustive list of tag kinds can be found below. This list will constantly
 
   address family 
   
-  admin status
-
   autonomous system
 
   BGP group
