@@ -221,6 +221,7 @@ def retag(options, pkg):
         shutil.rmtree("Contents")
 
     start_debug_logging()
+    logging.info("snapshot: %s", os.getcwd())
 
     canner = Canner(options.taggers_dir)
     canner.run()
@@ -253,6 +254,7 @@ def can(options, device):
     os.chdir(pkg)
 
     start_debug_logging()
+    logging.info("snapshot: %s", os.getcwd())
 
     session = create_session(device, options)
     try:
