@@ -35,9 +35,9 @@ def tag_services(top):
     def service_tag(e):
         t = taglib.tag("service", taglib.protocol_name(e.tag))
         t.implied_by(taglib.env_tags.device, e.sourceline)
-    for elem in top.xpath("system/services/*"):
+    for elem in top.xpath("system/services/*[ . != junos:comment]"):
         if elem.tag == 'web-management':
-            for proto in elem.xpath("*"):
+            for proto in elem.xpath("*[. != junos:comment]"):
                 service_tag(proto)
         else:
             service_tag(elem)
