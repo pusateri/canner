@@ -19,7 +19,6 @@
 
 from . import Personality, register
 from ..Session import SessionError
-import logging
 import pexpect
 
 class IOSPersonality(Personality):
@@ -30,25 +29,24 @@ class IOSPersonality(Personality):
         )
 
     def setup_session(self):
-        if self.session.execPassword:
-            logging.getLogger("IOS").info("issuing enable command")
-            self.session.child.sendline("enable")
-            index = self.session.child.expect(
-                    [r"[Pp]assword: ?\Z",
-                     pexpect.TIMEOUT,
-                     self.session.prompt])
+        self.session.child.sendline("enable")
+        index = self.session.child.expect([r"[Pp]assword: ?\Z",
+                                           pexpect.TIMEOUT,
+                                           self.session.prompt])
+        if index == 0:
+            if not self.session.execPassword:
+                raise SessionError("Exec password not specified")
+            self.session.child.sendline(self.session.execPassword)
+            index = self.session.child.expect([r"[Pp]assword: ?\Z",
+                                               pexpect.TIMEOUT,
+                                               self.session.prompt])
             if index == 0:
-                self.session.child.sendline(self.session.execPassword)
-                index = self.session.child.expect(
-                        [r"[Pp]assword: ?\Z",
-                         pexpect.TIMEOUT,
-                         self.session.prompt])
-                if index == 0:
-                    raise SessionError("Exec password not accepted")
-                if index == 1:
-                    raise SessionError("Problem sending exec password")
-            elif index == 1:
-                raise SessionError("Problem entering exec mode")
+                raise SessionError("Exec password not accepted")
+            if index == 1:
+                raise SessionError("Problem sending exec password")
+        elif index == 1:
+            raise SessionError("Problem entering exec mode")
+
         self.session.issueCmd("terminal length 0")
         self.session.issueCmd("terminal width 0")
 
