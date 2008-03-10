@@ -19,6 +19,7 @@
 
 from . import Personality, register
 from ..Session import SessionError
+import logging
 import pexpect
 
 class IOSPersonality(Personality):
@@ -28,20 +29,15 @@ class IOSPersonality(Personality):
         (r"--More--", " "),
         )
 
-    def __init__(self, session):
-        super(IOSPersonality, self).__init__(session)
-        self.is_privilaged = False
-
     def setup_session(self):
-        if not self.is_privilaged:
+        if self.session.execPassword:
+            logging.getLogger("IOS").info("issuing enable command")
             self.session.child.sendline("enable")
             index = self.session.child.expect(
                     [r"[Pp]assword: ?\Z",
                      pexpect.TIMEOUT,
                      self.session.prompt])
             if index == 0:
-                if not self.session.execPassword:
-                    raise SessionError("Exec password not specified")
                 self.session.child.sendline(self.session.execPassword)
                 index = self.session.child.expect(
                         [r"[Pp]assword: ?\Z",
@@ -53,7 +49,6 @@ class IOSPersonality(Personality):
                     raise SessionError("Problem sending exec password")
             elif index == 1:
                 raise SessionError("Problem entering exec mode")
-            self.is_privilaged = True
         self.session.issueCmd("terminal length 0")
         self.session.issueCmd("terminal width 0")
 
