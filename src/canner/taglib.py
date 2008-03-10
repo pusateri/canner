@@ -34,7 +34,9 @@ class Tag(object):
         self.sort_name = sort_name
         self.display_name = display_name
         self.qname = "%s--%s" % (kind, name)
-        self.changes = dict(sort_name=sort_name, display_name=display_name)
+        self.changes = dict(never_flushed=True,
+                            sort_name=sort_name, 
+                            display_name=display_name)
         
     def used(self, line=None, filename=None, sort_name=None, display_name=None):
         if sort_name:
@@ -45,13 +47,11 @@ class Tag(object):
         return self
 
     def implies(self, tag, line=None, filename=None):
-        tag.used(line, filename)
         self.changes["implies"] = tag.qname
         self._flush_changes(line, filename)
         return self
 
     def implied_by(self, tag, line=None, filename=None):
-        tag.used(line, filename)
         self.changes["implied_by"] = tag.qname
         self._flush_changes(line, filename)
         return self
@@ -63,6 +63,9 @@ class Tag(object):
             entry = dict((k, v) for k, v in self.changes.iteritems() if v)
             if entry:
                 entry["tag"] = self.qname
+                if "never_flushed" in entry:
+                    # never_flushed is just to force an initial flush.
+                    del entry["never_flushed"]
                 if not filename:
                     filename = default_filename
                 if filename and line:
