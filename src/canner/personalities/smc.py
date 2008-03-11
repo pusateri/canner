@@ -20,7 +20,10 @@
 from . import Personality, register
 
 class SMCPersonality(Personality):
-
+    
     os_name = "SMC"
-
-register(r"SMC\d\d\d\d", SMCPersonality)
+    in_command_interactions = (
+        (r"---More---", " "),
+        )
+            
+register(r"SMC", SMCPersonality)

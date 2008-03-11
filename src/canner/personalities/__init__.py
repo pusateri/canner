@@ -28,6 +28,7 @@ class Personality(object):
     scrub_from_output_patterns = (
         r"\x1b\[[0-9;]*?[a-zA-Z]",
         r"\r",
+        r"\x08+(\s+\x08+)?",
         )
     failed_command_patterns = ()
 
