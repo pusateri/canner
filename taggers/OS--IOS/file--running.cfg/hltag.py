@@ -138,6 +138,9 @@ class TagsFormatter(Formatter):
                 elif cmd == 'router':
                     self.skipTo(EndOfCommand)
 
+                elif cmd == "snmp-server":
+                    self.snmp_server()
+
                 elif cmd == 'username':
                     t = taglib.tag("user", self.accept(String))
                     t.implied_by(taglib.env_tags.device, self.lineNum)
@@ -193,7 +196,19 @@ class TagsFormatter(Formatter):
         if cmd == 'host':
             t = taglib.tag("RADIUS server", self.expect(Literal))
             t.implied_by(taglib.env_tags.device, self.lineNum)
-            self.skipTo(EndOfCommand)
+        
+        self.skipTo(EndOfCommand)
+
+
+    def snmp_server(self):
+        cmd = self.expect(Keyword)
+
+        if cmd == "community":
+            t = taglib.tag("SNMP community", self.expect(Literal))
+            t.implied_by(taglib.env_tags.device, self.lineNum)
+        
+        self.skipTo(EndOfCommand)
+
 
     def ip(self, if_tag=None):
         cmd = self.expect(Keyword)
