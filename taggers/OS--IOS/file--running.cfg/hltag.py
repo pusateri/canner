@@ -172,22 +172,27 @@ class TagsFormatter(Formatter):
         while True:
             if self.accept(Whitespace) is None:
                 return
-            op = self.accept(Operator)
-            cmd = self.expect(Keyword)
 
-            if False:
-                pass
+            try:
+                op = self.accept(Operator)
+                cmd = self.expect(Keyword)
 
-            elif cmd == "description":
-                description = self.expect(String)
-                t = taglib.tag("interface description", description)
-                t.implied_by(if_tag, self.lineNum)
-                self.expect(EndOfCommand)
+                if False:
+                    pass
 
-            elif cmd == 'ip':
-                self.ip(if_tag)
+                elif cmd == "description":
+                    description = self.expect(String)
+                    t = taglib.tag("interface description", description)
+                    t.implied_by(if_tag, self.lineNum)
+                    self.expect(EndOfCommand)
 
-            else:
+                elif cmd == 'ip':
+                    self.ip(if_tag)
+
+                else:
+                    self.skipTo(EndOfCommand)
+
+            except UnexpectedToken:
                 self.skipTo(EndOfCommand)
 
     def radius(self):
