@@ -81,7 +81,7 @@ class IosLexer(RegexLexer):
             (r'cdp(?=\s)', Keyword, 'slurp'),
             (r'custom-queue-list(?=\s)', Keyword, 'slurp'),
             (r'delay(?=\s)', Keyword, 'slurp'),
-            (r'description(?=\s)', Keyword, 'slurp'),
+            (r'description(?=\s)', Keyword, 'litStringEOL'),
             (r'duplex(?=\s)', Keyword, 'slurp'),
             (r'fair-queue(?=\s)', Keyword, 'slurp'),
             (r'half-duplex(?=\s)', Keyword, 'slurp'),
@@ -474,6 +474,11 @@ class IosLexer(RegexLexer):
             (r'\s', Text),
             (r'(")(.*?)(\1)', bygroups(Punctuation, String.Double, Punctuation), '#pop'),
             (r'\S+', String, '#pop'),
+            ],
+
+        'litStringEOL': [
+            (r'\s', Text),
+            (r'.*$', String, '#pop'),
             ],
 
         'litKeyword': [

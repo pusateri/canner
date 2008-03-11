@@ -157,12 +157,13 @@ class TagsFormatter(Formatter):
     def interface(self):
         name = self.expect(Name)
    
-        t = taglib.tag("interface", 
-                       "%s %s" % (taglib.env_tags.device.name, name))
-        t.implied_by(taglib.env_tags.snapshot, self.lineNum)
-        t.implies(taglib.env_tags.device, self.lineNum)
-        t.implies(taglib.tag("interface type", re.sub(r"[0-9/]+$", "", name)),
-                  self.lineNum)
+        if_tag = taglib.tag("interface", 
+                            "%s %s" % (taglib.env_tags.device.name, name))
+        if_tag.implied_by(taglib.env_tags.snapshot, self.lineNum)
+        if_tag.implies(taglib.env_tags.device, self.lineNum)
+        if_tag.implies(taglib.tag("interface type", 
+                                  re.sub(r"[0-9/.]+$", "", name)),
+                       self.lineNum)
         
         self.expect(EndOfCommand)
         while True:
@@ -174,8 +175,14 @@ class TagsFormatter(Formatter):
             if False:
                 pass
 
+            elif cmd == "description":
+                description = self.expect(String)
+                t = taglib.tag("interface description", description)
+                t.implied_by(if_tag, self.lineNum)
+                self.expect(EndOfCommand)
+
             elif cmd == 'ip':
-                self.ip(t)
+                self.ip(if_tag)
 
             else:
                 self.skipTo(EndOfCommand)
