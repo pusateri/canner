@@ -237,9 +237,9 @@ class Session(object):
             if index == 0:
                 break
             else:
-                response = self.in_command_interactions[index - 1][1]
-                if response:
-                    self.child.send(response)
+                resp = self.personality.in_command_interactions[index - 1][1]
+                if resp:
+                    self.child.send(resp)
 
         scrubCommandEchoPattern = r"(?s)\r?\n?" + re.escape(cmd) + r"\s*?\n"
         output, numberFound = re.subn(scrubCommandEchoPattern, "", output, 1)
