@@ -216,7 +216,7 @@ class Session(object):
         self.versionInfo = "".join(self.versionInfo.splitlines(True)[1:-1])
         self.versionInfo = re.sub(r"\r", "", self.versionInfo)
 
-        factories = personalities.match(self.versionInfo)
+        factories = personalities.match(self.loginInfo + self.versionInfo)
         if not factories:
             raise SessionError("No matching personalities")
         elif len(factories) > 1:
