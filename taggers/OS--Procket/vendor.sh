@@ -1,3 +1,5 @@
+#!/bin/sh
+
 #
 # Copyright 2007 !j Incorporated
 #
@@ -17,13 +19,10 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from . import Personality, register
-
-class ProcketPersonality(Personality):
-
-    os_name = "Procket"
-    in_command_interactions = (
-        (r"--More--", " "),
-        )
-        
-register(r"Procket ", ProcketPersonality)
+cat <<EOF
+[{
+    "tag": "vendor--Procket Networks",
+    "location": "$TRIGGER_FILENAME",
+    "implied_by": "device--$SESSION_DEVICE"
+}]
+EOF
