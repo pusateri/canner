@@ -105,7 +105,9 @@ class Session(object):
             host=self.host,
             )
         self.logger.debug("spawning '%s'", command)
-        self.child = pexpect.spawn(command, logfile=self.logfile)
+        self.child = pexpect.spawn(command, 
+                                   logfile=self.logfile, 
+                                   timeout=self.timeout)
         self.child.delaybeforesend = 0.5
 
         self.login()
@@ -203,7 +205,8 @@ class Session(object):
         self.child.sendline("show version")
         self.versionInfo = ""
         while True:
-            index = self.child.expect([self.prompt, "--More--", r"\x08", pexpect.TIMEOUT])
+            index = self.child.expect([self.prompt, "--More--", r"\x08", 
+                                       pexpect.TIMEOUT])
             self.versionInfo += self.child.before
             if index == 0: break
             if index == 1:
@@ -226,14 +229,17 @@ class Session(object):
         self.child.sendline(cmd)
 
         output = ""
+        patterns = [self.prompt]
+        patterns.extend(p[0] for p in self.personality.in_command_interactions)
         while True:
-            patterns = [self.prompt]
-            patterns.extend(p[0] for p in self.personality.in_command_interactions)
             index = self.child.expect(patterns)
             output += self.child.before
-            if index == 0: break
-            if self.personality.in_command_interactions[index-1][1]:
-                self.child.send(self.personality.in_command_interactions[index-1][1])
+            if index == 0:
+                break
+            else:
+                response = self.in_command_interactions[index - 1][1]
+                if response:
+                    self.child.send(response)
 
         scrubCommandEchoPattern = r"(?s)\r?\n?" + re.escape(cmd) + r"\s*?\n"
         output, numberFound = re.subn(scrubCommandEchoPattern, "", output, 1)
