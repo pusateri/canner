@@ -96,7 +96,6 @@ def add_options(parser):
     parser.add_option('-e', '--exec-password', dest='exec_password', 
                       help='exec PASSWORD')
     parser.add_option("-T", "--timeout", dest="timeout", type="int")
-    parser.set_defaults(timeout=-1)
 
 
 def process_options(parser, options, args):

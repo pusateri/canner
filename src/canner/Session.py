@@ -94,7 +94,7 @@ class Session(object):
 
         self.personality = None
         self.child = None
-        self.timeout = -1
+        self.timeout = 30
 
         self.logfile = open("pexpect.log", "w") if shouldLog else None
 
