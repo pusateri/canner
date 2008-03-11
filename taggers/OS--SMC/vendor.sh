@@ -21,7 +21,7 @@
 
 cat <<EOF
 [{
-    "tag": "vendor--SMC",
+    "tag": "vendor--SMC Networks",
     "location": "$TRIGGER_FILENAME",
     "implied_by": "device--$SESSION_DEVICE"
 }]
