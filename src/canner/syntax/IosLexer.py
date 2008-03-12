@@ -45,12 +45,13 @@ class IosLexer(RegexLexer):
             (r'aaa(?=\s)', Keyword, 'aaa'),
             (r'access-list(?=\s)', Keyword, 'acl'),
             (r'banner(?=\s)', Keyword, ('slurp', 'litHeredoc', 'litKeyword')),
-            (r'clock(?=\s)', Keyword, 'slurp'),
-            (r'cluster(?=\s)', Keyword, 'slurp'),
-            (r'control-plane(?=\s)', Keyword, 'slurp'),
             (r'boot(?=\s)', Keyword, 'slurp'),
             (r'boot-start-marker(?=\s)', Keyword, 'slurp'),
             (r'boot-end-marker(?=\s)', Keyword, 'slurp'),
+            (r'clock(?=\s)', Keyword, 'slurp'),
+            (r'cluster(?=\s)', Keyword, 'slurp'),
+            (r'control-plane(?=\s)', Keyword, 'slurp'),
+            (r'dot11(?=\s)', Keyword, 'dot11'),
             (r'enable(?=\s)', Keyword, 'slurp'),
             (r'file(?=\s)', Keyword, 'slurp'),
             (r'hostname(?=\s)', Keyword, 'litString'),
@@ -105,6 +106,26 @@ class IosLexer(RegexLexer):
             (r'^(?=\S)', Text, '#pop'),
             (r'server(?=\s)', Keyword, 'slurp'),
             (r'cache(?=\s)', Keyword, 'slurp'),
+            ],
+            
+        'dot11': [
+            (r'$', Text, '#pop'),
+            (r'\s', Text),
+            (r'ids(?=\s)', Keyword, 'slurp'),
+            (r'ssid(?=\s)', Keyword, ('#pop', 'dot11 ssid', 'litString')),
+            (r'vlan-name(?=\s)', Keyword, ('#pop', 'vlan', 'litKeyword', 'litString')),
+            (r'wpa(?=\s)', Keyword, 'slurp'),
+            ],
+
+        'dot11 ssid': [
+            (r'^\s+', Whitespace),
+            (r'\s', Text),
+            (r'^(?=\S)', Text, '#pop'),
+            (r'authentication(?=\s)', Keyword, 'slurp'),
+            (r'max-associations(?=\s)', Keyword, 'slurp'),
+            (r'mbssid(?=\s)', Keyword, 'slurp'),
+            (r'no(?=\s)', Operator.Word),
+            (r'vlan(?=\s)', Keyword, 'slurp'),
             ],
 
         'interface': [
