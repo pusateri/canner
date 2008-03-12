@@ -42,7 +42,7 @@ class IosLexer(RegexLexer):
             (r'^\s+', Error),
             (r'\s', Text),
             (r'no(?=\s)', Operator.Word),
-            (r'aaa(?=\s)', Keyword, 'slurp'),
+            (r'aaa(?=\s)', Keyword, 'aaa'),
             (r'access-list(?=\s)', Keyword, 'acl'),
             (r'banner(?=\s)', Keyword, ('slurp', 'litHeredoc', 'litKeyword')),
             (r'clock(?=\s)', Keyword, 'slurp'),
@@ -68,6 +68,37 @@ class IosLexer(RegexLexer):
             (r'snmp-server(?=\s)', Keyword, 'snmp-server'),
             (r'username(?=\s)', Keyword, 'username'),
             (r'version(?=\s)', Keyword, 'litBareWord'),
+            ],
+
+        'aaa': [
+            (r'$', Text, '#pop'),
+            (r'\s', Text),
+            (r'accounting(?=\s)', Keyword, 'slurp'),
+            (r'authentication(?=\s)', Keyword, 'slurp'),
+            (r'authorization(?=\s)', Keyword, 'slurp'),
+            (r'cache(?=\s)', Keyword, ('#pop', 'aaa cache', 'slurp')),
+            (r'group(?=\s)', Keyword, ('#pop', 'aaa group', 'slurp')),
+            (r'new-model(?=\s)', Keyword, 'slurp'),
+            (r'session-id(?=\s)', Keyword, 'slurp'),
+            ],
+
+        'aaa cache': [
+            (r'^\s+', Whitespace),
+            (r'\s', Text),
+            (r'^(?=\S)', Text, '#pop'),
+            (r'all(?=\s)', Keyword),
+            (r'cache(?=\s)', Keyword, 'slurp'),
+            (r'domain(?=\s)', Keyword, 'slurp'),
+            (r'no(?=\s)', Operator.Word),
+            (r'password(?=\s)', Keyword, 'slurp'),
+            ],
+            
+        'aaa group': [
+            (r'^\s+', Whitespace),
+            (r'\s', Text),
+            (r'^(?=\S)', Text, '#pop'),
+            (r'server(?=\s)', Keyword, 'slurp'),
+            (r'cache(?=\s)', Keyword, 'slurp'),
             ],
 
         'interface': [
@@ -104,6 +135,7 @@ class IosLexer(RegexLexer):
             (r'speed(?=\s)', Keyword, 'slurp'),
             (r'shutdown(?=\s)', Keyword, 'slurp'),
             (r'snmp(?=\s)', Keyword, 'slurp'),
+            (r'spanning-tree(?=\s)', Keyword, 'slurp'),
             (r'standby(?=\s)', Keyword, 'slurp'),
             (r'switchport(?=\s)', Keyword, 'slurp'),
             (r'timeout(?=\s)', Keyword, 'slurp'),
@@ -115,7 +147,7 @@ class IosLexer(RegexLexer):
         'ip': [
             (r'$', Text, '#pop'),
             (r'\s', Text),
-            (r'access-group(?=\s)', Keyword, ('ip access-group options', 'litInteger')),
+            (r'access-group(?=\s)', Keyword, 'ip access-group options'),
             (r'access-list(?=\s)', Keyword, 'acl'),
             (r'accounting(?=\s)', Keyword, 'slurp'),
             (r'accounting-list(?=\s)', Keyword, 'slurp'),
@@ -228,6 +260,8 @@ class IosLexer(RegexLexer):
 
         'ip access-group options': [
             (r'\s', Text),
+            include('litInteger'),
+            include('litString'),
             (r'in|out', Keyword, '#pop'),
             ],
 
