@@ -52,6 +52,7 @@ class IosLexer(RegexLexer):
             (r'boot-start-marker(?=\s)', Keyword, 'slurp'),
             (r'boot-end-marker(?=\s)', Keyword, 'slurp'),
             (r'enable(?=\s)', Keyword, 'slurp'),
+            (r'file(?=\s)', Keyword, 'slurp'),
             (r'hostname(?=\s)', Keyword, 'litString'),
             (r'interface(?=\s)', Keyword, ('interface', 'litInterfaceName')),
             (r'ip(?=\s)', Keyword, 'ip'),
@@ -65,9 +66,14 @@ class IosLexer(RegexLexer):
             (r'router(?=\s)', Keyword, 'router'),
             (r'scheduler(?=\s)', Keyword, 'slurp'),
             (r'service(?=\s)', Keyword, 'slurp'),
+            (r'snmp(?=\s)', Keyword, 'slurp'),
             (r'snmp-server(?=\s)', Keyword, 'snmp-server'),
+            (r'spanning-tree(?=\s)', Keyword, 'slurp'),
+            (r'system(?=\s)', Keyword, 'slurp'),
             (r'username(?=\s)', Keyword, 'username'),
             (r'version(?=\s)', Keyword, 'litBareWord'),
+            (r'vlan(?=\s)', Keyword, 'vlan'),
+            (r'vtp(?=\s)', Keyword, 'slurp'),
             ],
 
         'aaa': [
@@ -128,6 +134,7 @@ class IosLexer(RegexLexer):
             (r'mop(?=\s)', Keyword, 'slurp'),
             (r'mtu(?=\s)', Keyword, 'slurp'),
             (r'ntp(?=\s)', Keyword, 'slurp'),
+            (r'power(?=\s)', Keyword, 'slurp'),
             (r'priority-group(?=\s)', Keyword, 'slurp'),
             (r'random-detect(?=\s)', Keyword, 'slurp'),
             (r'rmon(?=\s)', Keyword, 'slurp'),
@@ -490,6 +497,20 @@ class IosLexer(RegexLexer):
             (r'\S+', String, 'slurp'),
             ],
 
+        'vlan': [
+            (r'$', Text, '#pop'),
+            (r'\s', Text),
+            (r'internal(?=\s)', Keyword, 'slurp'),
+            (r'\d+', Number.Integer, ('#pop', 'vlan int')),
+            ],
+
+        'vlan int': [
+            (r'^\s+', Whitespace),
+            (r'\s', Text),
+            (r'^(?=\S)', Text, '#pop'),
+            (r'name(?=\s)', Keyword, 'litString'),
+            ],
+            
         'slurp': [
             (r'.*$', Text, '#pop'),
             ],
