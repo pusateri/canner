@@ -32,6 +32,9 @@ import os
 import re
 
 EndOfCommand = Token.EndOfCommand
+ssidDict = {}
+ssidLineDict = {}
+ssidsForInterface = {}
 
 class UnexpectedToken(Exception):
     pass
@@ -121,6 +124,9 @@ class TagsFormatter(Formatter):
                 if False:  # just so all the real options can use elif...
                     pass
 
+                elif cmd == 'dot11':
+                    self.dot11()
+
                 elif cmd == 'hostname':
                     t = taglib.tag("hostname", self.accept(String))
                     t.implied_by(taglib.env_tags.device, self.lineNum)
@@ -156,7 +162,38 @@ class TagsFormatter(Formatter):
             except UnexpectedToken:
                 self.skipTo(EndOfCommand)
 
-
+    def dot11(self):
+        subcmd = self.expect(Keyword)
+        if subcmd == 'ssid':
+            ssid = self.accept(String)
+            self.expect(EndOfCommand)
+            
+            while True:
+                if self.accept(Whitespace) is None:
+                    return
+                
+                try:
+                    op = self.accept(Operator)
+                    cmd = self.expect(Keyword)
+                    
+                    if False:
+                        pass
+                        
+                    elif cmd == "vlan":
+                        vlan_id = self.expect(Literal)
+                        ssidDict[vlan_id] = ssid
+                        ssidLineDict[vlan_id] = self.lineNum
+                        taglib.tag("VLAN ID", vlan_id, sort_name="%05d" % int(vlan_id))
+                        self.expect(EndOfCommand)
+                        
+                    else:
+                        self.skipTo(EndOfCommand)
+                        
+                except UnexpectedToken:
+                    self.skipTo(EndOfCommand)
+        else:
+            self.skipTo(EndOfCommand)  
+        
     def interface(self):
         name = self.expect(Name)
    
@@ -168,11 +205,28 @@ class TagsFormatter(Formatter):
                                   re.sub(r"[0-9/.]+$", "", name)),
                        self.lineNum)
         
+        m = re.match(r"(Dot11Radio[0-9]+)(\.)?([0-9]+)?$", name)
+        if m:
+            if not m.group(2):
+                ssidsForInterface[m.group(1)] = []
+                
+            if m.group(3):
+                t = taglib.tag("VLAN ID", m.group(3), sort_name="%05d" % int(m.group(3)))
+                t.implied_by(if_tag, self.lineNum)
+                if ssidDict[m.group(3)] in ssidsForInterface[m.group(1)]:
+                    t = taglib.tag("ssid", ssidDict[m.group(3)])
+                    t.implied_by(if_tag, ssidLineDict[m.group(3)])
+        
         self.expect(EndOfCommand)
         while True:
+            
             if self.accept(Whitespace) is None:
                 return
 
+            if self.accept(Comment) is not None:
+                self.skipTo(EndOfCommand)
+                continue
+                
             try:
                 op = self.accept(Operator)
                 cmd = self.expect(Keyword)
@@ -189,6 +243,11 @@ class TagsFormatter(Formatter):
                 elif cmd == 'ip':
                     self.ip(if_tag)
 
+                elif cmd == 'ssid':
+                    if m and not m.group(2):
+                        ssidsForInterface[m.group(1)].append(self.expect(Literal))
+                    self.expect(EndOfCommand)
+                        
                 else:
                     self.skipTo(EndOfCommand)
 
@@ -222,11 +281,14 @@ class TagsFormatter(Formatter):
             pass
 
         elif cmd == 'address':
-            address = self.expect(Literal) + "/" + self.expect(Literal)
-            address_tag = taglib.ip_address_tag(address)
-            subnet_tag = taglib.ip_subnet_tag(address)
-            address_tag.implied_by(if_tag, self.lineNum)
-            subnet_tag.implied_by(address_tag, self.lineNum)
+            ipaddress = self.accept(Literal)
+            if ipaddress:
+                address = ipaddress + "/" + self.expect(Literal)
+                address_tag = taglib.ip_address_tag(address)
+                subnet_tag = taglib.ip_subnet_tag(address)
+                address_tag.implied_by(if_tag, self.lineNum)
+                subnet_tag.implied_by(address_tag, self.lineNum)
+                
             self.skipTo(EndOfCommand)
 
         elif cmd == 'domain name' or cmd == 'domain-name':

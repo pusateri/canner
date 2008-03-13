@@ -182,7 +182,7 @@ class IosLexer(RegexLexer):
             (r'shutdown(?=\s)', Keyword, 'slurp'),
             (r'snmp(?=\s)', Keyword, 'slurp'),
             (r'spanning-tree(?=\s)', Keyword, 'slurp'),
-            (r'ssid(?=\s)', Keyword, 'slurp'),
+            (r'ssid(?=\s)', Keyword, 'litString'),
             (r'standby(?=\s)', Keyword, 'slurp'),
             (r'station-role(?=\s)', Keyword, 'slurp'),
             (r'switchport(?=\s)', Keyword, 'slurp'),
