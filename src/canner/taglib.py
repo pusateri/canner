@@ -101,10 +101,10 @@ def ip_address_tag(address, kind=None, subnet_also=True, **kw):
     name = ip.strCompressed(wantprefixlen=0)
     if ip.version() == 4:
         if not kind: kind = "IPv4 address"
-        sort_name = "%08x" % ip.int()
+        sort_name = "v4 %08x" % ip.int()
     else:
         if not kind: kind = "IPv6 address"
-        sort_name = "%032x" % ip.int()
+        sort_name = "v6 %032x" % ip.int()
     return tag(kind, name, sort_name=sort_name, **kw)
 
 def ip_subnet_tag(address, kind=None, **kw):
@@ -113,10 +113,10 @@ def ip_subnet_tag(address, kind=None, **kw):
     name = ip.strCompressed()
     if ip.version() == 4:
         if not kind: kind = "IPv4 subnet"
-        sort_name = "%08x/%02d" % (ip.int(), ip.prefixlen())
+        sort_name = "v4 %08x/%02d" % (ip.int(), ip.prefixlen())
     else:
         if not kind: kind = "IPv6 subnet"
-        sort_name = "%032x/%03d" % (ip.int(), ip.prefixlen())
+        sort_name = "v6 %032x/%03d" % (ip.int(), ip.prefixlen())
     return tag(kind, name, sort_name=sort_name, **kw)    
 
 

@@ -81,24 +81,28 @@ def main(filename):
         if m:
             vlan, ipaddress, mask = m.groups()
             address = ipaddress + "/" + mask
+            ifaddr_tag = taglib.ip_address_tag(address, "interface address")
             address_tag = taglib.ip_address_tag(address)
             subnet_tag = taglib.ip_subnet_tag(address)
             vlan_tag = taglib.tag("interface", "%s %s" % (taglib.env_tags.device.name, vlan))
             vlan_tag.implied_by(taglib.env_tags.snapshot, line=n)
             vlan_tag.implies(taglib.env_tags.device, line=n)
-            vlan_tag.implies(address_tag, line=n)
+            vlan_tag.implies(ifaddr_tag, line=n)
+            ifaddr_tag.implies(address_tag, line=n)
             address_tag.implies(subnet_tag, line=n)
             continue
         m = re.match(r'configure "?([\w\d]+)"? ipaddress ([a-fA-F\d:]+)/([\d]+)\s+', line)
         if m:
             vlan, ipaddress, mask = m.groups()
             address = ipaddress + "/" + mask
-            address_tag = taglib.ip_address_tag(address, "IPv6 address")
-            subnet_tag = taglib.ip_subnet_tag(address, "IPv6 subnet")
+            ifaddr_tag = taglib.ip_address_tag(address, "interface address")
+            address_tag = taglib.ip_address_tag(address)
+            subnet_tag = taglib.ip_subnet_tag(address)
             vlan_tag = taglib.tag("interface", "%s %s" % (taglib.env_tags.device.name, vlan))
             vlan_tag.implied_by(taglib.env_tags.snapshot, line=n)
             vlan_tag.implies(taglib.env_tags.device, line=n)
-            vlan_tag.implies(address_tag, line=n)
+            vlan_tag.implies(ifaddr_tag, line=n)
+            ifaddr_tag.implies(address_tag, line=n)
             address_tag.implies(subnet_tag, line=n)
             continue
 

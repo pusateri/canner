@@ -284,9 +284,12 @@ class TagsFormatter(Formatter):
             ipaddress = self.accept(Literal)
             if ipaddress:
                 address = ipaddress + "/" + self.expect(Literal)
+                ifaddr_tag = taglib.ip_address_tag(address, 
+                                                   kind="interface address")
                 address_tag = taglib.ip_address_tag(address)
                 subnet_tag = taglib.ip_subnet_tag(address)
-                address_tag.implied_by(if_tag, self.lineNum)
+                ifaddr_tag.implied_by(if_tag, self.lineNum)
+                address_tag.implied_by(ifaddr_tag, self.lineNum)
                 subnet_tag.implied_by(address_tag, self.lineNum)
                 
             self.skipTo(EndOfCommand)

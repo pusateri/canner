@@ -91,8 +91,11 @@ def tag_interfaces(top):
 
             def tag_addresses(family_elem):
                 for address_elem in family_elem.xpath("address/name"):
+                    ifa_tag = taglib.ip_address_tag(address_elem.text,
+                                                    kind="interface address")
+                    ifa_tag.implied_by(unit_tag, address_elem.sourceline)
                     t = taglib.ip_address_tag(address_elem.text)
-                    t.implied_by(unit_tag, address_elem.sourceline)
+                    t.implied_by(ifa_tag, address_elem.sourceline)
                     t.implies(taglib.ip_subnet_tag(address_elem.text),
                               address_elem.sourceline)
             if inet_elem:
