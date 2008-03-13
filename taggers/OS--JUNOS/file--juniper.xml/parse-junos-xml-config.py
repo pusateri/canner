@@ -130,18 +130,25 @@ def tag_protocols(top):
             for peer_name_elem in group_elem.xpath("neighbor/name"):
                 peer_tag = taglib.tag("%s peer" % protocol, peer_name_elem.text)
                 address_tag = taglib.ip_address_tag(peer_name_elem.text)
-                peer_tag.implied_by(address_tag, peer_name_elem.sourceline)
+                peer_tag.implies(address_tag, peer_name_elem.sourceline)
                 peer_tag.implied_by(group_tag, peer_name_elem.sourceline)
                 peer_tag.implies(protocol_tag, peer_name_elem.sourceline)
-                # determine the AS number, if the peer doesn't have its own, use the groups
-                asn_elem_list = peer_name_elem.xpath("peer-as")
-                if len(asn_elem_list) == 0:
-                    asn_elem_list = group_elem.xpath("peer-as")
-                if len(asn_elem_list) > 0:
+
+                asn_elem_list = peer_name_elem.xpath("ancestor::*/peer-as")
+                if asn_elem_list:
                     asn_elem = asn_elem_list[0]
-                    asn_tag = taglib.tag("autonomous system", asn_elem.text,
-                                         sort_name='%010d' % int(asn_elem.text))
+                    asn_tag = taglib.as_number_tag(asn_elem.text, 
+                                                   kind="remote AS")
                     asn_tag.implied_by(peer_tag, asn_elem.sourceline)
+                    asn_tag.implies(taglib.as_number_tag(asn_elem.text))
+                                               
+                local_elem_list = asn_elem.xpath("ancestor::*/local-as/as-number")
+                if local_elem_list:
+                    local_elem = local_elem_list[0]
+                    t = taglib.as_number_tag(local_elem.text, "local AS")
+                    t.implied_by(peer_tag, local_elem.sourceline)
+                    t.implies(taglib.as_number_tag(local_elem.text))
+                    
         
     protocol = "MSDP"
     protocol_elem_list = top.xpath("protocols/%s" % protocol.lower())
@@ -156,7 +163,7 @@ def tag_protocols(top):
             for peer_name_elem in group_elem.xpath("peer/name"):
                 peer_tag = taglib.tag("%s peer" % protocol, peer_name_elem.text)
                 address_tag = taglib.ip_address_tag(peer_name_elem.text)
-                peer_tag.implied_by(address_tag, peer_name_elem.sourceline)
+                peer_tag.implies(address_tag, peer_name_elem.sourceline)
                 peer_tag.implied_by(group_tag, peer_name_elem.sourceline)
                 peer_tag.implies(protocol_tag, peer_name_elem.sourceline)
 

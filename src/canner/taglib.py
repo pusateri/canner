@@ -119,6 +119,10 @@ def ip_subnet_tag(address, kind=None, **kw):
         sort_name = "v6 %032x/%03d" % (ip.int(), ip.prefixlen())
     return tag(kind, name, sort_name=sort_name, **kw)    
 
+def as_number_tag(as_number, kind=None, **kw):
+    as_number = int(as_number)
+    if not kind: kind = "AS number"
+    return tag(kind, str(as_number), sort_name="%010d" % as_number)
 
 
 _tagging_log = list()
