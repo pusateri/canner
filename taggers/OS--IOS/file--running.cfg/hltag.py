@@ -214,7 +214,7 @@ class TagsFormatter(Formatter):
                 t = taglib.tag("VLAN ID", m.group(3), sort_name="%05d" % int(m.group(3)))
                 t.implied_by(if_tag, self.lineNum)
                 if ssidDict[m.group(3)] in ssidsForInterface[m.group(1)]:
-                    t = taglib.tag("ssid", ssidDict[m.group(3)])
+                    t = taglib.tag("SSID", ssidDict[m.group(3)])
                     t.implied_by(if_tag, ssidLineDict[m.group(3)])
         
         self.expect(EndOfCommand)

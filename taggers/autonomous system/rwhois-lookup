@@ -90,7 +90,7 @@ def extract_tags(src, context):
 
             ln, val = attrs.get("Org-Name", [(None, None)])[0]
             if val:
-                taglib.tag("as organization", val).implied_by(context, ln)
+                taglib.tag("AS organization", val).implied_by(context, ln)
 
             attrs = defaultdict(list)
 
