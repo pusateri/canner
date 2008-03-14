@@ -142,7 +142,7 @@ def tag_protocols(top):
                     asn_tag.implied_by(peer_tag, asn_elem.sourceline)
                     asn_tag.implies(taglib.as_number_tag(asn_elem.text))
                                                
-                local_elem_list = asn_elem.xpath("ancestor::*/local-as/as-number")
+                local_elem_list = peer_name_elem.xpath("ancestor::*/local-as/as-number")
                 if local_elem_list:
                     local_elem = local_elem_list[0]
                     t = taglib.as_number_tag(local_elem.text, "local AS")
