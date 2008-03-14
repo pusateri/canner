@@ -59,6 +59,7 @@ class IosLexer(RegexLexer):
             (r'hostname(?=\s)', Keyword, 'litString'),
             (r'interface(?=\s)', Keyword, ('interface', 'litInterfaceName')),
             (r'ip(?=\s)', Keyword, 'ip'),
+            (r'ipv6(?=\s)', Keyword, 'ip'),
             (r'line(?=\s)', Keyword, ('line', 'slurp')),
             (r'logging(?=\s)', Keyword, 'logging'),
             (r'mmi(?=\s)', Keyword, 'slurp'),
@@ -162,6 +163,7 @@ class IosLexer(RegexLexer):
             (r'half-duplex(?=\s)', Keyword, 'slurp'),
             (r'hold-queue(?=\s)', Keyword, 'slurp'),
             (r'ip(?=\s)', Keyword, 'ip'),
+            (r'ipv6(?=\s)', Keyword, 'ip'),
             (r'keepalive(?=\s)', Keyword, 'slurp'),
             (r'load-interval(?=\s)', Keyword, 'slurp'),
             (r'logging(?=\s)', Keyword, 'slurp'),
@@ -316,7 +318,8 @@ class IosLexer(RegexLexer):
 
         'ip-address': [
             (r'$', Text, '#pop'),
-            (r'\s(?=\S)', Text, ('ip-address options', 'litNetmask', 'litAddress')),
+            (r'\s(?=[0-9.]+\s)', Text, ('ip-address options', 'litNetmask', 'litAddress')),
+            (r'\s(?=\S+/)', Text, ('ip-address options', 'litPrefixLen', 'litAddress')),
             (r'\s', Text),
             ],
 
@@ -600,12 +603,26 @@ class IosLexer(RegexLexer):
 
         'litAddress': [
             (r'\s', Text),
+            include('litV4Address'),
+            include('litV6Address'),
+            ],
+        
+        'litV4Address': [
             (r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', Number.Integer, '#pop'),
+            ],
+        
+        'litV6Address': [
             (r'(([\dA-Fa-f]{1,4}\:{1,2})|\:{2,2})([\dA-Fa-f]{1,4}\:{1,2}){0,6}[\dA-Fa-f]{1,4}', Number.Hex, '#pop'),
             ],
 
         'litNetmask': [
-            include('litAddress'),
+            (r'\s', Text),
+            include('litV4Address'),
+            ],
+           
+        'litPrefixLen': [
+            (r'\s', Text),
+            (r'(/)(\d{1,3})', bygroups(Punctuation, Number.Integer), '#pop'),
             ],
 
         'ospfAreaLiteral': [

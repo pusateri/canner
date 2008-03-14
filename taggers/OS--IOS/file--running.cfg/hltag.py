@@ -183,7 +183,8 @@ class TagsFormatter(Formatter):
                         vlan_id = self.expect(Literal)
                         ssidDict[vlan_id] = ssid
                         ssidLineDict[vlan_id] = self.lineNum
-                        taglib.tag("VLAN ID", vlan_id, sort_name="%05d" % int(vlan_id))
+                        t = taglib.tag("VLAN ID", vlan_id, sort_name="%05d" % int(vlan_id))
+                        t.used()
                         self.expect(EndOfCommand)
                         
                     else:
@@ -209,6 +210,7 @@ class TagsFormatter(Formatter):
         if m:
             if not m.group(2):
                 ssidsForInterface[m.group(1)] = []
+                if_tag.implies(taglib.tag("interface type", "wireless"), self.lineNum)
                 
             if m.group(3):
                 t = taglib.tag("VLAN ID", m.group(3), sort_name="%05d" % int(m.group(3)))
@@ -241,8 +243,11 @@ class TagsFormatter(Formatter):
                     self.expect(EndOfCommand)
 
                 elif cmd == 'ip':
-                    self.ip(if_tag)
+                    self.ip(if_tag=if_tag, version='IPv4')
 
+                elif cmd == 'ipv6':
+                    self.ip(if_tag=if_tag, version='IPv6')
+                    
                 elif cmd == 'ssid':
                     if m and not m.group(2):
                         ssidsForInterface[m.group(1)].append(self.expect(Literal))
@@ -274,7 +279,7 @@ class TagsFormatter(Formatter):
         self.skipTo(EndOfCommand)
 
 
-    def ip(self, if_tag=None):
+    def ip(self, if_tag=None, version=None):
         cmd = self.expect(Keyword)
 
         if False:
@@ -283,6 +288,7 @@ class TagsFormatter(Formatter):
         elif cmd == 'address':
             ipaddress = self.accept(Literal)
             if ipaddress:
+                self.accept(Punctuation)    # allow detection of address/prefix length
                 address = ipaddress + "/" + self.expect(Literal)
                 ifaddr_tag = taglib.ip_address_tag(address, 
                                                    kind="interface address")
@@ -291,6 +297,9 @@ class TagsFormatter(Formatter):
                 ifaddr_tag.implied_by(if_tag, self.lineNum)
                 address_tag.implied_by(ifaddr_tag, self.lineNum)
                 subnet_tag.implied_by(address_tag, self.lineNum)
+                if version:
+                    version_tag = taglib.tag("IP version", version)
+                    version_tag.implied_by(if_tag, self.lineNum)
                 
             self.skipTo(EndOfCommand)
 
