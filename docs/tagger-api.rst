@@ -31,7 +31,7 @@ The following environment variables are passed to the tagger for its use during 
     The tag that triggered this tagger to be executed.
                   
   TRIGGER_FILENAME
-    The filename that triggered the tagger to be executed. The tagger may parse this file to generate tags.
+    The filename that triggered the tagger to be executed. The tagger may parse this file to generate tags.  TRIGGER_FILENAME is only set if TRIGGER_KIND is "file".
         
 Arguments
 ---------

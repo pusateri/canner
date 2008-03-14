@@ -22,7 +22,7 @@
 cat <<EOF
 [{
     "tag": "vendor--Extreme Networks",
-    "location": "$TRIGGER_FILENAME",
+    "location": "version.log",
     "implied_by": "device--$SESSION_DEVICE"
 }]
 EOF

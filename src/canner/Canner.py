@@ -87,36 +87,39 @@ class Canner(object):
         self.taggers[tag].append(tagger)
         ranTagger = False
         if "--" in tag:
-            tags = [tag]
+            if tag in self.tagRefs:
+                self.runTagger(tagger, tag)
+                ranTagger = True
         else:
-            prefix = tag + "--"
-            tags = [t for t in self.tagRefs if t.startswith(prefix)]
-        for t in tags:
-            if t in self.tagRefs:
-                for tagRef in self.tagRefs[t]:
-                    self.runTagger(tagger, tagRef, t)
-                    ranTagger = True
+            for t in [t for t in self.tagRefs if t.startswith(tag + "--")]:
+                self.runTagger(tagger, t)
+                ranTagger = True
         if not ranTagger:
             self.logger.debug("waiting to run tagger '%s'" %
                               self._stripTagDir(tagger))
 
 
-    def addTagRef(self, tag, tagger="canner", path="", line=0,
+    def addTagRef(self, tag, tagger="canner", filename=None, line=None,
                   properties={}, **kw):
-        tagRef = dict(tagger=tagger, filename=path, line=int(line or 0))
+        filename = filename or ""
+        line = int(line or 0)
+        tagRef = dict(tagger=tagger, filename=filename, line=line)
         tagRef.update(properties)
         tagRef.update(kw)
         self.tagRefs[tag].append(tagRef)
         self.logger.debug("added tag '%s' from %s:%d" %
                           (tag, tagRef["filename"], tagRef["line"]))
 
-        wildcardTag = tag[0:tag.index("--")]
-        for t in tag, wildcardTag:
-            for tagger in self.taggers[t]:
-                self.runTagger(tagger, tagRef, tag)
-            for pendingTag, path in self.pendingTagDirs[t]:
-                self.loadTagDir(pendingTag, path)
-                del self.pendingTagDirs[t]
+        if len(self.tagRefs[tag]) == 1:
+            # This is the first time we've seen the tag.  Run any waiting
+            # taggers and load any pending directories.
+            wildcardTag = tag[0:tag.index("--")]
+            for t in tag, wildcardTag:
+                for tagger in self.taggers[t]:
+                    self.runTagger(tagger, tag)
+                for pendingTag, path in self.pendingTagDirs[t]:
+                    self.loadTagDir(pendingTag, path)
+                    del self.pendingTagDirs[t]
 
     def addFile(self, filename, content=None):
         if content is not None:
@@ -164,12 +167,15 @@ class Canner(object):
             else:
                 self.addTagger(tag, path)
 
-    def runTagger(self, tagger, tagRef, tag):
+    def runTagger(self, tagger, tag):
         self.logger.info("running tagger '%s'" % self._stripTagDir(tagger))
 
+        kind, _, name = tag.partition("--")
+
         env = dict(os.environ)
-        env["TRIGGER_KIND"], _, env["TRIGGER_NAME"] = tag.partition("--")
-        env["TRIGGER_FILENAME"] = tagRef["filename"]
+        env["TRIGGER_KIND"], env["TRIGGER_NAME"] = kind, name
+        if kind == "file":
+            env["TRIGGER_FILENAME"] = name
         for k, v in self.sessionInfo.iteritems():
             env["SESSION_%s" % re.sub(r'([A-Z])', r'_\1', k).upper()] = str(v)
 
@@ -236,7 +242,10 @@ class Canner(object):
             if tag.startswith("file--"):
                 self.addFileTagRef(tag[6:])
             else:
-                filename, _, lineNum = entry["location"].partition(":")
+                try:
+                    filename, _, lineNum = entry["location"].partition(":")
+                except KeyError:
+                    filename = lineNum = None
 
                 properties = dict()
                 if "sort_name" in entry:

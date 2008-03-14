@@ -47,11 +47,13 @@ class Tag(object):
         return self
 
     def implies(self, tag, line=None, filename=None):
+        tag.used()
         self.changes["implies"] = tag.qname
         self._flush_changes(line, filename)
         return self
 
     def implied_by(self, tag, line=None, filename=None):
+        tag.used()
         self.changes["implied_by"] = tag.qname
         self._flush_changes(line, filename)
         return self

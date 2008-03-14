@@ -135,14 +135,16 @@ def tag_protocols(top):
                     asn_tag = taglib.as_number_tag(asn_elem.text, 
                                                    kind="remote AS")
                     asn_tag.implied_by(peer_tag, asn_elem.sourceline)
-                    asn_tag.implies(taglib.as_number_tag(asn_elem.text))
+                    asn_tag.implies(taglib.as_number_tag(asn_elem.text),
+                                    asn_elem.sourceline)
                                                
                 local_elem_list = peer_name_elem.xpath("ancestor::*/local-as/as-number")
                 if local_elem_list:
                     local_elem = local_elem_list[0]
                     t = taglib.as_number_tag(local_elem.text, "local AS")
                     t.implied_by(peer_tag, local_elem.sourceline)
-                    t.implies(taglib.as_number_tag(local_elem.text))
+                    t.implies(taglib.as_number_tag(local_elem.text),
+                              local_elem.sourceline)
                     
         
     protocol = "MSDP"
