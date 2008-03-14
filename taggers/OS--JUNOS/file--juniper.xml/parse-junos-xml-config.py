@@ -84,10 +84,6 @@ def tag_interfaces(top):
                 t = taglib.tag("interface description", elem.text)
                 t.implied_by(unit_tag, elem.sourceline)
 
-            inet_list = unit_elem.xpath("family/inet")
-            inet_elem = inet_list[0] if inet_list else None
-            inet6_list = unit_elem.xpath("family/inet6")
-            inet6_elem = inet6_list[0] if inet6_list else None
 
             def tag_addresses(family_elem):
                 for address_elem in family_elem.xpath("address/name"):
@@ -98,21 +94,20 @@ def tag_interfaces(top):
                     t.implied_by(ifa_tag, address_elem.sourceline)
                     t.implies(taglib.ip_subnet_tag(address_elem.text),
                               address_elem.sourceline)
-            if inet_elem:
+                              
+            inet_list = unit_elem.xpath("family/inet")
+            if inet_list:
+                inet_elem = inet_list[0]
                 tag_addresses(inet_elem)
-            if inet6_elem:
+                t = taglib.tag("IP version", "IPv4")
+                t.implied_by(unit_tag, inet_elem.sourceline)
+                
+            inet6_list = unit_elem.xpath("family/inet6")
+            if inet6_list:
+                inet6_elem = inet6_list[0]
                 tag_addresses(inet6_elem)
-                          
-            if inet_elem and inet6_elem:
-                t = taglib.tag("address family", "inet and inet6")
-                t.implied_by(unit_tag, inet_elem.sourceline)
+                t = taglib.tag("IP version", "IPv6")
                 t.implied_by(unit_tag, inet6_elem.sourceline)
-            elif inet_elem:
-                t = taglib.tag("address family", "inet only")
-                t.implied_by(unit_tag, inet_elem.sourceline)
-            elif inet6_elem:
-                t = taglib.tag("address family", "inet6 only")
-                t.implied_by(unit_tag, inet_elem.sourceline)
                 
 
 def tag_protocols(top):
