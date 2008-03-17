@@ -130,7 +130,7 @@ class Session(object):
                 pexpect.TIMEOUT,
                 r"(?i)are you sure you want to continue connecting",
                 r"(?im)^\r?(username|login): ?",
-                r"(?i)password: ?",
+                r"(?i)(Enter password.*?:|password: ?)",
                 r"\r?Press any key to continue",
                 r"(?i)(host|node)name nor servname provided, or not known",
                 r"(?i)permission denied",
