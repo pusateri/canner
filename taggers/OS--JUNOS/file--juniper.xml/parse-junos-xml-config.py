@@ -113,6 +113,8 @@ def tag_interfaces(top):
 def tag_protocols(top):
     
     protocol = "BGP"
+    routing_options_local_as_list = top.xpath("routing-options/autonomous-system/as-number")
+    
     protocol_elem_list = top.xpath("protocols/%s" % protocol.lower())
     if protocol_elem_list:
         protocol_elem = protocol_elem_list[0]
@@ -123,26 +125,37 @@ def tag_protocols(top):
                                    "%s %s" % (device_tag.name, name_elem.text))
             group_tag.implied_by(device_tag, name_elem.sourceline)
             for peer_name_elem in group_elem.xpath("neighbor/name"):
-                peer_tag = taglib.tag("%s peer" % protocol, peer_name_elem.text)
+                peer_tag = taglib.ip_address_tag(peer_name_elem.text, kind="%s peer" % protocol)
+                peering_tag = taglib.tag("%s peering" % protocol,
+                                         "%s %s" % (device_tag.name, peer_tag.name),
+                                         sort_name="%s %s" % (device_tag.name, peer_tag.sort_name))
+                peering_tag.implies(protocol_tag, peer_name_elem.sourceline)
+                peering_tag.implied_by(device_tag, peer_name_elem.sourceline)
+                peering_tag.implied_by(group_tag, peer_name_elem.sourceline)
+                
                 address_tag = taglib.ip_address_tag(peer_name_elem.text)
                 peer_tag.implies(address_tag, peer_name_elem.sourceline)
-                peer_tag.implied_by(group_tag, peer_name_elem.sourceline)
-                peer_tag.implies(protocol_tag, peer_name_elem.sourceline)
-
+                peer_tag.implied_by(peering_tag, peer_name_elem.sourceline)
+                
+                
                 asn_elem_list = peer_name_elem.xpath("ancestor::*/peer-as")
                 if asn_elem_list:
                     asn_elem = asn_elem_list[0]
                     asn_tag = taglib.as_number_tag(asn_elem.text, 
                                                    kind="remote AS")
-                    asn_tag.implied_by(peer_tag, asn_elem.sourceline)
+                    asn_tag.implied_by(peering_tag, asn_elem.sourceline)
                     asn_tag.implies(taglib.as_number_tag(asn_elem.text),
                                     asn_elem.sourceline)
                                                
                 local_elem_list = peer_name_elem.xpath("ancestor::*/local-as/as-number")
                 if local_elem_list:
                     local_elem = local_elem_list[0]
+                elif routing_options_local_as_list:
+                    local_elem = routing_options_local_as_list[0]
+                    
+                if local_elem is not None:
                     t = taglib.as_number_tag(local_elem.text, "local AS")
-                    t.implied_by(peer_tag, local_elem.sourceline)
+                    t.implied_by(peering_tag, local_elem.sourceline)
                     t.implies(taglib.as_number_tag(local_elem.text),
                               local_elem.sourceline)
                     
@@ -250,7 +263,7 @@ def main():
     tag_matches(top, "system/ntp/server/name", "NTP server", context)
     tag_matches(top, "system/login/user/name", "user", context)
     tag_matches(top, "snmp/community/name", "SNMP community", context)
-    
+        
     tag_services(top)
     tag_interfaces(top)
     tag_protocols(top)

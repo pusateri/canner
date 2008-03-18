@@ -35,6 +35,7 @@ EndOfCommand = Token.EndOfCommand
 ssidDict = {}
 ssidLineDict = {}
 ssidsForInterface = {}
+device_tag = taglib.env_tags.device
 
 class UnexpectedToken(Exception):
     pass
@@ -120,7 +121,6 @@ class TagsFormatter(Formatter):
                     self.skipTo(EndOfCommand)
                     continue
                 cmd = self.expect(Keyword)
-
                 if False:  # just so all the real options can use elif...
                     pass
 
@@ -142,7 +142,7 @@ class TagsFormatter(Formatter):
                     self.radius()
 
                 elif cmd == 'router':
-                    self.skipTo(EndOfCommand)
+                    self.router()
 
                 elif cmd == "snmp-server":
                     self.snmp_server()
@@ -242,13 +242,13 @@ class TagsFormatter(Formatter):
                     t.implied_by(if_tag, self.lineNum)
                     self.expect(EndOfCommand)
 
-                elif cmd == 'ip':
-                    self.ip(if_tag=if_tag, version='IPv4')
+                elif cmd == "ip":
+                    self.ip(if_tag=if_tag, version="IPv4")
 
-                elif cmd == 'ipv6':
-                    self.ip(if_tag=if_tag, version='IPv6')
+                elif cmd == "ipv6":
+                    self.ip(if_tag=if_tag, version="IPv6")
                     
-                elif cmd == 'ssid':
+                elif cmd == "ssid":
                     if m and not m.group(2):
                         ssidsForInterface[m.group(1)].append(self.expect(Literal))
                     self.expect(EndOfCommand)
@@ -262,12 +262,72 @@ class TagsFormatter(Formatter):
     def radius(self):
         cmd = self.expect(Keyword)
 
-        if cmd == 'host':
+        if cmd == "host":
             t = taglib.tag("RADIUS server", self.expect(Literal))
             t.implied_by(taglib.env_tags.device, self.lineNum)
         
         self.skipTo(EndOfCommand)
+        
+    def router(self):
+        protocol = self.expect(Keyword)
+        protocol_tag = taglib.tag("routing protocol", protocol.upper())
+        protocol_tag.implied_by(taglib.env_tags.device, self.lineNum)
+        
+        if protocol == "bgp":
+            local_as = self.expect(Literal)
+            local_as_tag = taglib.as_number_tag(local_as, "local AS")
+            local_as_tag.implies(taglib.as_number_tag(local_as), self.lineNum)
 
+            self.skipTo(EndOfCommand)
+            while True:
+            
+                if self.accept(Whitespace) is None:
+                    return
+
+                if self.accept(Comment) is not None:
+                    self.skipTo(EndOfCommand)
+                    continue
+                
+                try:
+                    op = self.accept(Operator)
+                    if op:
+                        pass
+                        
+                    cmd = self.expect(Keyword)
+
+                    if False:
+                        pass
+
+                    elif cmd == "neighbor":
+                        peer = self.expect(Literal)
+                        peer_tag = taglib.ip_address_tag(peer, kind="%s peer" % protocol.upper())
+                        peering_tag = taglib.tag("%s peering" % protocol.upper(),
+                                                 "%s %s" % (device_tag.name, peer),
+                                                 sort_name="%s %s" % (device_tag.name, peer_tag.sort_name))
+                        peering_tag.implies(protocol_tag, self.lineNum)
+                        peering_tag.implied_by(device_tag, self.lineNum)
+                        local_as_tag.implied_by(peering_tag, self.lineNum)
+                        
+                        address_tag = taglib.ip_address_tag(peer)
+                        peer_tag.implies(address_tag, self.lineNum)
+                        peer_tag.implied_by(peering_tag, self.lineNum)
+                        
+                        subcmd = self.expect(Keyword)
+                        if subcmd == "remote-as":
+                            peer_as = self.expect(Literal)
+                            peer_as_tag = taglib.as_number_tag(peer_as, "remote AS")
+                            peer_as_tag.implied_by(peering_tag, self.lineNum)
+                            peer_as_tag.implies(taglib.as_number_tag(peer_as), self.lineNum)
+                            
+                        self.skipTo(EndOfCommand)
+                        
+                    else:
+                        self.skipTo(EndOfCommand)
+
+                except UnexpectedToken:
+                    self.skipTo(EndOfCommand)
+                    
+        self.skipTo(EndOfCommand)
 
     def snmp_server(self):
         cmd = self.expect(Keyword)
@@ -355,8 +415,6 @@ class TagsFormatter(Formatter):
         else:
             self.skipTo(EndOfCommand)
 
-    def router(self):
-        pass
 
 def main():
     filename = taglib.default_filename
