@@ -138,6 +138,9 @@ class TagsFormatter(Formatter):
                 elif cmd == 'ip':
                     self.ip()
 
+                elif cmd == "ntp":
+                    self.ntp()
+
                 elif cmd == 'radius-server':
                     self.radius()
 
@@ -338,6 +341,15 @@ class TagsFormatter(Formatter):
         
         self.skipTo(EndOfCommand)
 
+    def ntp(self):
+        cmd = self.expect(Keyword)
+
+        if cmd == "server":
+            t = taglib.tag("NTP server", self.expect(Literal))
+            t.implied_by(taglib.env_tags.device, self.lineNum)
+
+        self.skipTo(EndOfCommand)
+
 
     def ip(self, if_tag=None, version=None):
         cmd = self.expect(Keyword)
@@ -368,6 +380,11 @@ class TagsFormatter(Formatter):
             t.implied_by(taglib.env_tags.device, self.lineNum)
             self.expect(EndOfCommand)
 
+        elif cmd == 'helper-address':
+            t = taglib.tag("BOOTP relay", self.expect(Literal))
+            t.implied_by(taglib.env_tags.device, self.lineNum)
+            self.expect(EndOfCommand)
+            
         elif cmd == 'http':
             nextCmd = self.expect(Keyword)
             if nextCmd == 'server':
@@ -382,7 +399,7 @@ class TagsFormatter(Formatter):
             t = taglib.tag("name server", self.expect(Literal))
             t.implied_by(taglib.env_tags.device, self.lineNum)
             self.expect(EndOfCommand)
-
+            
         elif cmd == 'scp':
             nextCmd = self.expect(Keyword)
             if nextCmd == 'server':

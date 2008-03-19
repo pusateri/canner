@@ -49,12 +49,19 @@ def main(filename):
             continue
 
         # dns
-        m = re.match(r'configure dns-client add name-server ([\w\d.-]+)( vr [\w\d.]+)?', line)
+        m = re.match(r'configure dns-client add domain-suffix ([\w\d.-]+)', line)
         if m:
-            server, vr = m.groups()
+            server = m.group(1)
+            taglib.tag("domain name", server).implied_by(taglib.env_tags.device, line=n)
+            continue
+            
+        m = re.match(r'configure dns-client add (name-server )?([\w\d.-]+)( vr [\w\d.]+)?', line)
+        if m:
+            ignore, server, vr = m.groups()
             taglib.tag("name server", server).implied_by(taglib.env_tags.device, line=n)
             continue
-        m = re.match(r'configure dns-client add domain-suffix ([\w\d.-]+)', line)
+            
+        m = re.match(r'configure dns-client default-domain ([\w\d.-]+)', line)
         if m:
             server = m.group(1)
             taglib.tag("domain name", server).implied_by(taglib.env_tags.device, line=n)
