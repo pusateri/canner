@@ -333,7 +333,8 @@ class Canner(object):
                 si[k.strip()] = v.strip()
 
         for name in os.listdir("."):
-            if name.startswith(".") or name.endswith("~") or name == "Contents":
+            if name.startswith(".") or name.endswith("~") \
+                    or name in ("Contents", "pexpect.log"):
                 continue
             self.addFileTagRef(name)
 
