@@ -55,7 +55,6 @@ setup(
     packages = ["canner",
                 "canner.syntax",
                 "canner.personalities",
-                "tests",
                 ],
 
     test_suite = "tests.suite",
