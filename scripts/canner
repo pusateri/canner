@@ -139,7 +139,7 @@ def process_options(parser, options, args):
     if not options.taggers_dir:
         my_dir = os.path.dirname(os.path.abspath(__file__))
         options.taggers_dir = os.path.normpath(
-            os.path.join(my_dir, '../..', 'taggers'))
+            os.path.join(my_dir, '..', 'taggers'))
     if not options.taggers_dir:
         dir = os.path.expanduser('/usr/local/share/netCannery/taggers')
         if os.path.isdir(dir):
