@@ -18,7 +18,12 @@
 #
 
 """
-Canner
+Canner is an open source framework for talking to network devices from
+a variety of vendors. Arbitrary commands can be issued to the device
+and the raw output and logs are saved in files in a directory snapshot
+or 'can'. Canner extracts specific, targeted information in a
+device-dependent manner to highlight the details of the network that
+are of interest to its operators.
 """
 
 __author__ = "!j Incorporated"
@@ -31,9 +36,13 @@ from setuptools import setup
 setup(
     name = "Canner",
     version = "0.1",
-    description = __doc__,
     author = __author__,
-
+    author_email = "support@bang.com",
+    url = "canner.bangj.com",
+    description = \
+        "A tool for snapshotting and parsing network device configuration",
+    long_description = __doc__,
+    
     provides = ["Canner"],
 
     install_requires = ["Pygments >=0.9",
