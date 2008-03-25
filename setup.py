@@ -23,7 +23,11 @@ Canner
 
 __author__ = "!j Incorporated"
 
+import ez_setup
+ez_setup.use_setuptools("0.6c7")
+
 from setuptools import setup
+
 setup(
     name = "Canner",
     version = "0.1",
@@ -31,11 +35,13 @@ setup(
     author = __author__,
 
     provides = ["Canner"],
-    requires = ["Pygments (>=0.9)",
-                "pexpect (>=2.1)",
-                "lxml (>=1.3)",
-                "IPy (>=0.55)",
-                ],
+
+    install_requires = ["Pygments >=0.9",
+                        "pexpect >=2.1",
+                        "lxml >=1.3, <2a",
+                        "IPy >=0.55",
+                        "simplejson >=1.7",
+                        ],
 
     packages = ["canner",
                 "canner.syntax",
