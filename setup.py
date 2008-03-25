@@ -42,17 +42,20 @@ setup(
                 "canner.personalities",
                 "tests",
                 ],
-    scripts = ["scripts/canner"],
 
     test_suite = "tests.suite",
 
     entry_points = {
-        'pygments.lexers': [
-            'ios = canner.syntax:IosLexer',
-            'junos = canner.syntax:JunosLexer',
+        "console_scripts": [
+            "canner = canner.cmdline:main",
             ],
-        'pygments.formatters': [
-            'CannerHTML = canner.syntax:CannerHtmlFormatter',
+            
+        "pygments.lexers": [
+            "ios = canner.syntax:IosLexer",
+            "junos = canner.syntax:JunosLexer",
+            ],
+        "pygments.formatters": [
+            "CannerHTML = canner.syntax:CannerHtmlFormatter",
             ]
         },
     )
