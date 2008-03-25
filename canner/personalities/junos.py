@@ -17,14 +17,17 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from . import Personality, register
+from . import Personality
 
 class JUNOSPersonality(Personality):
 
     os_name = "JUNOS"
 
+    @classmethod
+    def match(cls, info):
+        return "JUNOS " in info
+
+
     def setup_session(self):
         self.session.issueCmd("set cli screen-length 0")
         self.session.issueCmd("set cli screen-width 0")
-
-register(r"JUNOS ", JUNOSPersonality)

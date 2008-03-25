@@ -17,8 +17,9 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from . import Personality, register
+from . import Personality
 import pexpect
+import re
 
 class ExtremeXOSPersonality(Personality):
 
@@ -27,6 +28,11 @@ class ExtremeXOSPersonality(Personality):
         r"Invalid input detected",
         )
     logout_command = "quit"
+
+    @classmethod
+    def match(cls, info):
+        return re.search(r"Image.*ExtremeXOS", info)
+
 
     def setup_session(self):
         self.session.issueCmd("disable clipaging")
@@ -41,4 +47,3 @@ class ExtremeXOSPersonality(Personality):
             elif index == 1:
                 self.session.child.sendline("n")
 
-register(r"Image.*ExtremeXOS", ExtremeXOSPersonality)

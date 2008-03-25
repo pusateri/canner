@@ -20,7 +20,7 @@
 import logging
 import re
 import pexpect
-
+import pkg_resources
 
 class Personality(object):
 
@@ -51,22 +51,7 @@ class Personality(object):
         return output
 
 
-_factories = []
-    
-def register(detect_pattern, personality_factory):
-    global _factories
-    _factories.append((detect_pattern, personality_factory))
-
-def match(version_info):
-    global _factories
-    return [f for (p, f) in _factories if re.search(p, version_info)]
-
-
-
-from . import extremeware
-from . import extreme_xos
-from . import hp_procurve
-from . import ios
-from . import junos
-from . import procket
-from . import smc
+def match(info):
+    personalities = [ep.load() for ep in
+                     pkg_resources.iter_entry_points("canner.personalities")]
+    return [p for p in personalities if p.match(info)]

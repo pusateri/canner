@@ -63,6 +63,16 @@ setup(
         "console_scripts": [
             "canner = canner.cmdline:main",
             ],
+
+        "canner.personalities": [
+            "extreme_xos = canner.personalities.extreme_xos:ExtremeXOSPersonality",
+            "extremeware = canner.personalities.extremeware:ExtremeWarePersonality",
+            "hp_procurve = canner.personalities.hp_procurve:HPProCurvePersonality",
+            "ios = canner.personalities.ios:IOSPersonality",
+            "junos = canner.personalities.junos:JUNOSPersonality",
+            "procket = canner.personalities.procket:ProcketPersonality",
+            "smc = canner.personalities.smc:SMCPersonality",
+            ],
             
         "pygments.lexers": [
             "ios = canner.syntax:IosLexer",

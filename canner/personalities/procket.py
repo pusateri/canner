@@ -17,7 +17,7 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from . import Personality, register
+from . import Personality
 
 class ProcketPersonality(Personality):
 
@@ -25,5 +25,8 @@ class ProcketPersonality(Personality):
     in_command_interactions = (
         (r"--More--", " "),
         )
-        
-register(r"Procket ", ProcketPersonality)
+
+    @classmethod
+    def match(cls,info):
+        return "Procket " in info
+

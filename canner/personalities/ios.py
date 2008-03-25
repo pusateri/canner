@@ -17,9 +17,10 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from . import Personality, register
+from . import Personality
 from ..Session import SessionError
 import pexpect
+import re
 
 class IOSPersonality(Personality):
 
@@ -27,6 +28,12 @@ class IOSPersonality(Personality):
     in_command_interactions = (
         (r"--More--", " "),
         )
+
+    @classmethod
+    def match(cls, info):
+        return re.search(r"Cisco (IOS|Internetwork Operating System) Software",
+                         info)
+
 
     def setup_session(self):
         self.session.child.sendline("enable")
@@ -49,6 +56,3 @@ class IOSPersonality(Personality):
 
         self.session.issueCmd("terminal length 0")
         self.session.issueCmd("terminal width 0")
-
-register(r"Cisco (IOS|Internetwork Operating System) Software",
-         IOSPersonality)

@@ -17,7 +17,7 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from . import Personality, register
+from . import Personality
 
 class SMCPersonality(Personality):
     
@@ -26,4 +26,7 @@ class SMCPersonality(Personality):
         (r"---More---", " "),
         )
             
-register(r"SMC", SMCPersonality)
+    @classmethod
+    def match(cls, info):
+        return "SMC" in info
+

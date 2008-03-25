@@ -17,7 +17,7 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from . import Personality, register
+from . import Personality
 import pexpect
 
 class HPProCurvePersonality(Personality):
@@ -25,6 +25,11 @@ class HPProCurvePersonality(Personality):
 
     os_name = "HPProCurve"
     logout_command = "logout"
+
+    @classmethod
+    def match(cls, info):
+        return "Image stamp" in info
+
 
     def setup_session(self):
         self.session.issueCmd("terminal length 1000")
@@ -42,5 +47,3 @@ class HPProCurvePersonality(Personality):
                 self.session.child.sendline("y")
             elif index == 2:
                 self.session.child.sendline("n")
-
-register(r"Image stamp", HPProCurvePersonality)
