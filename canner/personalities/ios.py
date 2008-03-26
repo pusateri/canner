@@ -17,8 +17,8 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import canner
 from . import Personality
-from ..Session import SessionError
 import pexpect
 import re
 
@@ -42,17 +42,17 @@ class IOSPersonality(Personality):
                                            self.session.prompt])
         if index == 0:
             if not self.session.execPassword:
-                raise SessionError("Exec password not specified")
+                raise canner.error("Exec password not specified")
             self.session.child.sendline(self.session.execPassword)
             index = self.session.child.expect([r"[Pp]assword: ?\Z",
                                                pexpect.TIMEOUT,
                                                self.session.prompt])
             if index == 0:
-                raise SessionError("Exec password not accepted")
+                raise canner.error("Exec password not accepted")
             if index == 1:
-                raise SessionError("Problem sending exec password")
+                raise canner.error("Problem sending exec password")
         elif index == 1:
-            raise SessionError("Problem entering exec mode")
+            raise canner.error("Problem entering exec mode")
 
         self.session.issueCmd("terminal length 0")
         self.session.issueCmd("terminal width 0")

@@ -28,12 +28,11 @@ import logging
 import shutil
 import datetime
 import traceback
-from canner.Session import Session, SessionError
-from canner.Canner import Canner
 from optparse import OptionParser
 
-class CannerError(Exception):
-    pass
+from . import error
+from .session import Session
+from .engine import Engine
 
 
 def add_options(parser):
@@ -214,7 +213,7 @@ def retag(options, pkg):
     starting_dir = os.getcwd()
     pkgdir = os.path.join(starting_dir, pkg)
     if not os.path.isdir(pkgdir):
-        raise CannerError("snapshot directory '%s' not found" % pkgdir)
+        raise error("snapshot directory '%s' not found" % pkgdir)
     os.chdir(os.path.join(starting_dir, pkg))
     if os.path.exists("Contents"):
         shutil.rmtree("Contents")
@@ -222,8 +221,8 @@ def retag(options, pkg):
     start_debug_logging()
     logging.info("snapshot: %s", os.getcwd())
 
-    canner = Canner(options.taggers_dir)
-    canner.run()
+    engine = Engine(options.taggers_dir)
+    engine.run()
     
 
 def can(options, device):
@@ -245,7 +244,7 @@ def can(options, device):
         pkg = "%s.netcan" % device
 
     if os.path.isdir(pkg) and not options.force:
-        raise CannerError("snapshot directory '%s' already exists" % pkg)
+        raise error("snapshot directory '%s' already exists" % pkg)
 
     if os.path.exists(pkg):
         shutil.rmtree(pkg)
@@ -258,8 +257,8 @@ def can(options, device):
     session = create_session(device, options)
     try:
         session.start()
-        canner = Canner(options.taggers_dir, session, timestamp)
-        canner.run()
+        engine = Engine(options.taggers_dir, session, timestamp)
+        engine.run()
     except Exception:
         exc_info = sys.exc_info()
         logging.error("caught error, attempting to close session")
@@ -308,7 +307,7 @@ def log_exception():
 
 def main():
     def force_quit(signum, frame):
-        raise CannerError("caught signal %d" % signum)
+        raise error("caught signal %d" % signum)
     signal.signal(signal.SIGTERM, force_quit)
     
     try:

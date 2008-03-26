@@ -27,10 +27,6 @@ import sys
 from string import Template
 
 
-class SessionError(StandardError):
-    pass
-
-
 class Session(object):
 
     def __init__(self, device, host=None, user=None,
@@ -90,7 +86,7 @@ class Session(object):
             self.usingBastion = False
 
         if not self.connectCommand:
-            raise SessionError("Command not specified")
+            raise error("Command not specified")
 
         self.personality = None
         self.child = None
@@ -153,16 +149,16 @@ class Session(object):
 
             elif index == 2: # username,
                 if sentPassword:
-                    raise SessionError("Password incorrect")
+                    raise error("Password incorrect")
                 if not self.user:
-                    raise SessionError("User not specified")
+                    raise error("User not specified")
                 self.child.sendline(self.user)
 
             elif index == 3: # password
                 if sentPassword:
-                    raise SessionError("Password incorrect")
+                    raise error("Password incorrect")
                 if not self.password:
-                    raise SessionError("Password not specified")
+                    raise error("Password not specified")
                 self.child.sendline(self.password)
                 sentPassword = True
 
@@ -170,15 +166,15 @@ class Session(object):
                 self.child.send(" ")
 
             elif index == 5:
-                raise SessionError("Unknown host")
+                raise error("Unknown host")
             elif index == 6:
-                raise SessionError("Permission denied")
+                raise error("Permission denied")
             elif index == 7:
-                raise SessionError("Connection closed by remote host")
+                raise error("Connection closed by remote host")
             elif index == 8:
-                raise SessionError("Connection refused")
+                raise error("Connection refused")
             elif index == 9:
-                raise SessionError("Connection timed out")
+                raise error("Connection timed out")
 
             elif index == 10: # hopefully a prompt
                 return
@@ -212,16 +208,16 @@ class Session(object):
             if index == 1:
                 self.child.send(" ")
             if index == 3:
-                raise SessionError("Problem determining personality")
+                raise error("Problem determining personality")
         self.versionInfo = "".join(self.versionInfo.splitlines(True)[1:-1])
         self.versionInfo = re.sub(r"\r", "", self.versionInfo)
 
         factories = personalities.match(self.loginInfo + self.versionInfo)
         if not factories:
-            raise SessionError("No matching personalities")
+            raise error("No matching personalities")
         elif len(factories) > 1:
             self.logger.debug("multiple personalities: %r" % factories)
-            raise SessionError("More than one personality matched")
+            raise error("More than one personality matched")
         self.personality = factories[0](self)
 
     def issueCmd(self, cmd):
@@ -244,7 +240,7 @@ class Session(object):
         scrubCommandEchoPattern = r"(?s)\r?\n?" + re.escape(cmd) + r"\s*?\n"
         output, numberFound = re.subn(scrubCommandEchoPattern, "", output, 1)
         if numberFound != 1:
-            raise SessionError("Problem issuing command")
+            raise error("Problem issuing command")
 
         output = self.personality.cleanup_output(output)
         for pattern in self.personality.failed_command_patterns:

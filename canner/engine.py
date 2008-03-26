@@ -34,20 +34,17 @@ import uuid
 import base64
 import simplejson
 from canner import plistlib
-from canner.Session import Session
-
-class error(StandardError):
-    pass
+from canner.session import Session
 
 
-class Canner(object):
+class Engine(object):
 
     def __init__(self, taggersDir, session=None, timestamp=None):
         self.taggersDir = taggersDir
         self.session = session
         self.timestamp = timestamp
 
-        self.logger = logging.getLogger("Canner")
+        self.logger = logging.getLogger("Engine")
 
         self.tagRefs = defaultdict(list)
         self.pendingTagDirs = defaultdict(list)
