@@ -290,36 +290,7 @@ class Engine(object):
             if content:
                 self.addFileTagRef(filename, content)
 
-    def _convertStandardTagsToSessionInfo(self):
-        ## TODO: remove this code once all snapshots have been migrated to
-        ## use sessionInfo
-        if os.path.exists("standard-tags") and \
-                not os.path.exists("sessionInfo"):
-            parseRE = re.compile(r"^(.*?)--(.*?)(?:\s*{{.*)?$")
-            keyMap = {
-                "snapshot ID": "id",
-                "snapshot timestamp": "timestamp",
-                "snapshot device": "device",
-                "snapshot user": "user",
-                "OS": "osName",
-                }
-            with open("standard-tags") as old:
-                with open("sessionInfo", "w") as new:
-                    for line in old:
-                        m = parseRE.match(line)
-                        if not m: continue
-                        kind, name = m.groups()
-                        try:
-                            key = keyMap[kind]
-                        except KeyError:
-                            pass
-                        else:
-                            print >>new, "%s=%s" % (key, name)
-
     def passivelyGenerateTags(self):
-        # TODO: whack when able -- see above
-        self._convertStandardTagsToSessionInfo()
-
         if not os.path.exists("sessionInfo"):
             raise error("sessionInfo file not found")
 
