@@ -19,6 +19,7 @@
 
 from . import Personality
 import pexpect
+import re
 
 class HPProCurvePersonality(Personality):
     # TODO: figure out how to handle files longer than 1000 lines
@@ -28,7 +29,7 @@ class HPProCurvePersonality(Personality):
 
     @classmethod
     def match(cls, info):
-        return "Image stamp" in info
+        return re.search(r"HP.* ProCurve ", info)
 
 
     def setup_session(self):
