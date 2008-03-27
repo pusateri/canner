@@ -33,8 +33,9 @@ import socket
 import uuid
 import base64
 import simplejson
-from canner import plistlib
-from canner.session import Session
+from . import error
+from . import plistlib
+from .session import Session
 
 
 class Engine(object):
