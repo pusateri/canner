@@ -188,10 +188,10 @@ def create_session(device, options):
     session = Session(device, 
                       user=options.user, 
                       password=options.password, 
-                      execPassword=options.exec_password, 
+                      exec_password=options.exec_password, 
                       command=options.connect_command,
-                      shouldLog=options.log_session,
-                      useCannerRC=options.use_canner_rc,
+                      should_log=options.log_session,
+                      use_rc_files=options.use_canner_rc,
                       rc_files=options.rc_files)
     if options.timeout:
         session.timeout = options.timeout

@@ -41,9 +41,9 @@ class IOSXRPersonality(Personality):
                                            pexpect.TIMEOUT,
                                            self.session.prompt])
         if index == 0:
-            if not self.session.execPassword:
+            if not self.session.exec_password:
                 raise canner.error("Exec password not specified")
-            self.session.child.sendline(self.session.execPassword)
+            self.session.child.sendline(self.session.exec_password)
             index = self.session.child.expect([r"[Pp]assword: ?\Z",
                                                pexpect.TIMEOUT,
                                                self.session.prompt])
@@ -54,5 +54,5 @@ class IOSXRPersonality(Personality):
         elif index == 1:
             raise canner.error("Problem entering exec mode")
 
-        self.session.issueCmd("terminal length 0")
-        self.session.issueCmd("terminal width 0")
+        self.session.issue_command("terminal length 0")
+        self.session.issue_command("terminal width 0")

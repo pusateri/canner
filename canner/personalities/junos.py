@@ -29,5 +29,5 @@ class JUNOSPersonality(Personality):
 
 
     def setup_session(self):
-        self.session.issueCmd("set cli screen-length 0")
-        self.session.issueCmd("set cli screen-width 0")
+        self.session.issue_command("set cli screen-length 0")
+        self.session.issue_command("set cli screen-width 0")

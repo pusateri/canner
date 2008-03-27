@@ -30,11 +30,18 @@ from string import Template
 
 class Session(object):
 
-    def __init__(self, device, host=None, user=None,
-                 password=None, execPassword=None,
-                 command=None, bastionHost=None, bastionCommand=None,
-                 useCannerRC=True, rc_files=None,
-                 shouldLog=False):
+    def __init__(self, 
+                 device, 
+                 host=None, 
+                 user=None,
+                 password=None, 
+                 exec_password=None,
+                 command=None, 
+                 bastion_host=None, 
+                 bastion_command=None,
+                 use_rc_files=True, 
+                 rc_files=None,
+                 should_log=False):
 
         self.logger = logging.getLogger("Session")
 
@@ -43,7 +50,7 @@ class Session(object):
             "bastion_command": "ssh -t $bastion_host",
         }
         config = ConfigParser.SafeConfigParser(defaults)
-        if useCannerRC:
+        if use_rc_files:
             if not rc_files:
                 rc_files = [os.path.expanduser("~/.cannerrc"), "cannerrc"]
             config.read(rc_files)
@@ -63,41 +70,41 @@ class Session(object):
         self.host = get("host", host, device)
         self.user = get("user", user)
         self.password = get("password", password)
-        self.execPassword = get("exec_password", execPassword)
+        self.exec_password = get("exec_password", exec_password)
 
         command = get("command", command)
-        bastionHost = get("bastion_host", bastionHost)
-        bastionCommand = get("bastion_command", bastionCommand)
-        if bastionCommand:
-            template = Template(bastionCommand)
+        bastion_host = get("bastion_host", bastion_host)
+        bastion_command = get("bastion_command", bastion_command)
+        if bastion_command:
+            template = Template(bastion_command)
             mapping = dict()
-            if bastionHost:
-                mapping["bastion_host"] = bastionHost
+            if bastion_host:
+                mapping["bastion_host"] = bastion_host
             try:
-                bastionCommand = template.substitute(mapping)
+                bastion_command = template.substitute(mapping)
             except KeyError:
                 # the bastion command isn't complete, ignore it
-                self.connectCommand = command
-                self.usingBastion = False
+                self.connect_command = command
+                self.using_bastion = False
             else:
-                self.connectCommand = bastionCommand + " " + command
-                self.usingBastion = True
+                self.connect_command = bastion_command + " " + command
+                self.using_bastion = True
         else:
-            self.connectCommand = command
-            self.usingBastion = False
+            self.connect_command = command
+            self.using_bastion = False
 
-        if not self.connectCommand:
+        if not self.connect_command:
             raise error("Command not specified")
 
         self.personality = None
         self.child = None
         self.timeout = 90
 
-        self.logfile = open("pexpect.log", "w") if shouldLog else None
+        self.logfile = open("pexpect.log", "w") if should_log else None
 
     def start(self, login_only=False):
         self.logger.info("connecting to '%s'" % self.device)
-        command = Template(self.connectCommand).substitute(
+        command = Template(self.connect_command).substitute(
             user=self.user,
             host=self.host,
             )
@@ -110,16 +117,16 @@ class Session(object):
         self.login()
 
         if not login_only:
-            self.determinePrompt()
-            self.determinePersonality()
+            self.determine_prompt()
+            self.determine_personality()
             self.personality.setup_session()
             self.os_name = self.personality.os_name
 
     def login(self):
         self.logger.info("logging in")
 
-        self.loginInfo = ""
-        sentPassword = False
+        self.login_info = ""
+        sent_password = False
         timeout = 300
 
         while True:
@@ -137,9 +144,9 @@ class Session(object):
                 r"(?im)^\r?.{1,40}?[%#>] ?\Z",
                 ]
             index = self.child.expect(patterns, timeout=timeout)
-            self.loginInfo += self.child.before
+            self.login_info += self.child.before
             if self.child.after != pexpect.TIMEOUT:
-                self.loginInfo += self.child.after
+                self.login_info += self.child.after
             timeout = self.timeout
 
             if index == 0: # timed out, hopefully we're at a prompt
@@ -149,19 +156,19 @@ class Session(object):
                 self.child.sendline("yes")
 
             elif index == 2: # username,
-                if sentPassword:
+                if sent_password:
                     raise error("Password incorrect")
                 if not self.user:
                     raise error("User not specified")
                 self.child.sendline(self.user)
 
             elif index == 3: # password
-                if sentPassword:
+                if sent_password:
                     raise error("Password incorrect")
                 if not self.password:
                     raise error("Password not specified")
                 self.child.sendline(self.password)
-                sentPassword = True
+                sent_password = True
 
             elif index == 4: # space required to continue
                 self.child.send(" ")
@@ -180,10 +187,10 @@ class Session(object):
             elif index == 10: # hopefully a prompt
                 return
 
-    def determinePrompt(self, text=None):
+    def determine_prompt(self, text=None):
         self.logger.info("determining prompt")
 
-        text = text or self.loginInfo
+        text = text or self.login_info
         last = text[text.rindex("\n")+1:]
 
         prompt = r"(?m)^\r?" + re.escape(last)
@@ -194,26 +201,26 @@ class Session(object):
         self.prompt = prompt
         self.logger.debug("prompt pattern: %r", self.prompt)
 
-    def determinePersonality(self):
+    def determine_personality(self):
         self.logger.info("determining personality")
 
         from . import personalities
         
         self.child.sendline("show version")
-        self.versionInfo = ""
+        self.version_info = ""
         while True:
             index = self.child.expect([self.prompt, "--More--", r"\x08", 
                                        pexpect.TIMEOUT])
-            self.versionInfo += self.child.before
+            self.version_info += self.child.before
             if index == 0: break
             if index == 1:
                 self.child.send(" ")
             if index == 3:
                 raise error("Problem determining personality")
-        self.versionInfo = "".join(self.versionInfo.splitlines(True)[1:-1])
-        self.versionInfo = re.sub(r"\r", "", self.versionInfo)
+        self.version_info = "".join(self.version_info.splitlines(True)[1:-1])
+        self.version_info = re.sub(r"\r", "", self.version_info)
 
-        factories = personalities.match(self.loginInfo + self.versionInfo)
+        factories = personalities.match(self.login_info + self.version_info)
         if not factories:
             raise error("No matching personalities")
         elif len(factories) > 1:
@@ -221,7 +228,7 @@ class Session(object):
             raise error("More than one personality matched")
         self.personality = factories[0](self)
 
-    def issueCmd(self, cmd):
+    def issue_command(self, cmd):
         self.logger.info("issuing command '%s'" % cmd)
         self.child.sendline(cmd)
 
@@ -238,8 +245,8 @@ class Session(object):
                 if resp:
                     self.child.send(resp)
 
-        scrubCommandEchoPattern = r"(?s)\r?\n?" + re.escape(cmd) + r"\s*?\n"
-        output, numberFound = re.subn(scrubCommandEchoPattern, "", output, 1)
+        scrub_echo_pattern = r"(?s)\r?\n?" + re.escape(cmd) + r"\s*?\n"
+        output, numberFound = re.subn(scrub_echo_pattern, "", output, 1)
         if numberFound != 1:
             raise error("Problem issuing command")
 

@@ -33,8 +33,8 @@ class HPProCurvePersonality(Personality):
 
 
     def setup_session(self):
-        self.session.issueCmd("terminal length 1000")
-        self.session.issueCmd("terminal width 1920")
+        self.session.issue_command("terminal length 1000")
+        self.session.issue_command("terminal width 1920")
 
     def logout(self):
         self.session.child.sendline(self.logout_command)

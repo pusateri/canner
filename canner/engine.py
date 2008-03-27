@@ -281,13 +281,13 @@ class Engine(object):
         s = "\n".join("%s=%s" % (k, si[k]) for k in sorted(si))
         self.addFileTagRef("sessionInfo", s)
 
-        self.addFileTagRef("login.log", self.session.loginInfo)
-        self.addFileTagRef("version.log", self.session.versionInfo)
+        self.addFileTagRef("login.log", self.session.login_info)
+        self.addFileTagRef("version.log", self.session.version_info)
 
         while self.pendingCommands:
             command, filename = self.pendingCommands.pop()
             assert not os.path.exists(filename)
-            content = self.session.issueCmd(command)
+            content = self.session.issue_command(command)
             if content:
                 self.addFileTagRef(filename, content)
 

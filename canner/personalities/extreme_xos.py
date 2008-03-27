@@ -35,7 +35,7 @@ class ExtremeXOSPersonality(Personality):
 
 
     def setup_session(self):
-        self.session.issueCmd("disable clipaging")
+        self.session.issue_command("disable clipaging")
 
     def logout(self):
         self.session.child.sendline(self.logout_command)
