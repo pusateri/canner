@@ -18,41 +18,14 @@
 #
 
 import canner
-from . import Personality
+from .ios import IOSPersonality
 import pexpect
 import re
 
-class IOSXRPersonality(Personality):
+class IOSXRPersonality(IOSPersonality):
 
     os_name = "IOSXR"
-    in_command_interactions = (
-        (r"--More--", " "),
-        )
 
     @classmethod
     def match(cls, info):
-        return re.search(r"Cisco IOS XR Software",
-                         info)
-
-
-    def setup_session(self):
-        self.session.child.sendline("enable")
-        index = self.session.child.expect([r"[Pp]assword: ?\Z",
-                                           pexpect.TIMEOUT,
-                                           self.session.prompt])
-        if index == 0:
-            if not self.session.exec_password:
-                raise canner.error("Exec password not specified")
-            self.session.child.sendline(self.session.exec_password)
-            index = self.session.child.expect([r"[Pp]assword: ?\Z",
-                                               pexpect.TIMEOUT,
-                                               self.session.prompt])
-            if index == 0:
-                raise canner.error("Exec password not accepted")
-            if index == 1:
-                raise canner.error("Problem sending exec password")
-        elif index == 1:
-            raise canner.error("Problem entering exec mode")
-
-        self.session.issue_command("terminal length 0")
-        self.session.issue_command("terminal width 0")
+        return re.search(r"Cisco IOS XR Software", info)
