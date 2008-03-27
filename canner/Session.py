@@ -24,6 +24,7 @@ import os
 import pexpect
 import re
 import sys
+from . import error
 from string import Template
 
 
