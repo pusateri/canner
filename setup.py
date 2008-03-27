@@ -69,6 +69,7 @@ setup(
             "extremeware = canner.personalities.extremeware:ExtremeWarePersonality",
             "hp_procurve = canner.personalities.hp_procurve:HPProCurvePersonality",
             "ios = canner.personalities.ios:IOSPersonality",
+            "ios_xr = canner.personalities.ios_xr:IOSXRPersonality",
             "junos = canner.personalities.junos:JUNOSPersonality",
             "procket = canner.personalities.procket:ProcketPersonality",
             "smc = canner.personalities.smc:SMCPersonality",
