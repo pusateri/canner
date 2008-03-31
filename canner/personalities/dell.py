@@ -18,15 +18,18 @@
 #
 
 from . import Personality
+import re
 
 class DellPersonality(Personality):
     
-    os_name = "^SW version"
+    os_name = "Dell"
     in_command_interactions = (
-        (r"More: <space>, Quit: q, One line: <return>", " "),
+        (r"More: <space>, Quit: q, One line: <return> ", " "),
         )
             
     @classmethod
     def match(cls, info):
-        return "Dell" in info
+        return re.search(r"SW version", info)
 
+    def setup_session(self):
+        self.session.issue_command("terminal datadump")
