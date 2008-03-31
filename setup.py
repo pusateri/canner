@@ -65,6 +65,7 @@ setup(
             ],
 
         "canner.personalities": [
+            "dell = canner.personalities.dell:DellPersonality",
             "extreme_xos = canner.personalities.extreme_xos:ExtremeXOSPersonality",
             "extremeware = canner.personalities.extremeware:ExtremeWarePersonality",
             "hp_procurve = canner.personalities.hp_procurve:HPProCurvePersonality",
