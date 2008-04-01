@@ -35,6 +35,7 @@ EndOfCommand = Token.EndOfCommand
 ssidDict = {}
 ssidLineDict = {}
 ssidsForInterface = {}
+ipv6_general_prefixes = {}
 device_tag = taglib.env_tags.device
 
 class UnexpectedToken(Exception):
@@ -138,6 +139,9 @@ class TagsFormatter(Formatter):
                 elif cmd == 'ip':
                     self.ip()
 
+                elif cmd == "ipv6":
+                    self.ip(version="IPv6")
+                    
                 elif cmd == "ntp":
                     self.ntp()
 
@@ -358,9 +362,12 @@ class TagsFormatter(Formatter):
             pass
 
         elif cmd == 'address':
+            name = self.accept(String)
             ipaddress = self.accept(Literal)
             if ipaddress:
                 self.accept(Punctuation)    # allow detection of address/prefix length
+                if name:
+                    ipaddress = IPy.intToIp(IPy.IP(ipaddress).int() | ipv6_general_prefixes[name].int(), 6)
                 address = ipaddress + "/" + self.expect(Literal)
                 ifaddr_tag = taglib.ip_address_tag(address, 
                                                    kind="interface address")
@@ -380,6 +387,14 @@ class TagsFormatter(Formatter):
             t.implied_by(taglib.env_tags.device, self.lineNum)
             self.expect(EndOfCommand)
 
+        elif cmd == 'general-prefix':
+            name = self.expect(String)
+            ipaddress = self.expect(Literal)
+            self.expect(Punctuation)
+            address = ipaddress + "/" + self.expect(Literal)
+            ipv6_general_prefixes[name] = IPy.IP(address)
+            self.expect(EndOfCommand)
+            
         elif cmd == 'helper-address':
             t = taglib.tag("BOOTP relay", self.expect(Literal))
             t.implied_by(taglib.env_tags.device, self.lineNum)

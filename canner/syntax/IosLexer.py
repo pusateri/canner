@@ -206,6 +206,10 @@ class IosLexer(RegexLexer):
             (r'world-mode(?=\s)', Keyword, 'slurp'),
             ],
 
+            # here we combine ip and ipv6 at both the top level and interface level
+            # since there is so much overlap. Obviously, not everything applies
+            # everywhere so there is room for errors here. But trying to figure out
+            # what commands apply to ip vs. ipv6 in all releases seems error prone
         'ip': [
             (r'$', Text, '#pop'),
             (r'\s', Text),
@@ -249,6 +253,7 @@ class IosLexer(RegexLexer):
             (r'forward-protocol(?=\s)', Keyword, 'slurp'),
             (r'ftp(?=\s)', Keyword, 'slurp'),
             (r'gdp(?=\s)', Keyword, 'slurp'),
+            (r'general-prefix(?=\s)', Keyword, 'ip-address'),
             (r'gratuitous-arps(?=\s)', Keyword, 'slurp'),
             (r'hello-interval(?=\s)', Keyword, 'slurp'),
             (r'helper-address(?=\s)', Keyword, 'litAddress'),
@@ -330,6 +335,7 @@ class IosLexer(RegexLexer):
             (r'$', Text, '#pop'),
             (r'\s(?=[0-9.]+\s)', Text, ('ip-address options', 'litNetmask', 'litAddress')),
             (r'\s(?=\S+/)', Text, ('ip-address options', 'litPrefixLen', 'litAddress')),
+            (r'\S+', String),
             (r'\s', Text),
             ],
             
