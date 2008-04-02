@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #
-# Copyright 2007 !j Incorporated
+# Copyright 2008 !j Incorporated
 #
 # This file is part of Canner.
 #

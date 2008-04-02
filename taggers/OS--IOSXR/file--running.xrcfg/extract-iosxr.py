@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Copyright 2007-2008 !j Incorporated
+# Copyright 2008 !j Incorporated
 #
 # This file is part of Canner.
 #
@@ -125,9 +125,9 @@ class TagsFormatter(Formatter):
                 if False:  # just so all the real options can use elif...
                     pass
 
-                elif cmd == 'dot11':
-                    self.dot11()
-
+                elif cmd == 'domain':
+                    self.domain()
+                    
                 elif cmd == 'hostname':
                     t = taglib.tag("hostname", self.accept(String))
                     t.implied_by(taglib.env_tags.device, self.lineNum)
@@ -135,12 +135,6 @@ class TagsFormatter(Formatter):
 
                 elif cmd == 'interface':
                     self.interface()
-
-                elif cmd == 'ip':
-                    self.ip()
-
-                elif cmd == "ipv6":
-                    self.ip(version="IPv6")
                     
                 elif cmd == "ntp":
                     self.ntp()
@@ -153,15 +147,14 @@ class TagsFormatter(Formatter):
 
                 elif cmd == "snmp-server":
                     self.snmp_server()
+                    
+                elif cmd == "ssh":
+                    self.ssh()
 
                 elif cmd == 'username':
                     t = taglib.tag("user", self.accept(String))
                     t.implied_by(taglib.env_tags.device, self.lineNum)
                     self.skipTo(EndOfCommand)
-
-                # elif cmd == 'version':
-                #     self.outputTag("version--" + self.accept(String))
-                #     self.expect(EndOfCommand)
 
                 else:
                     self.skipTo(EndOfCommand)
@@ -169,63 +162,23 @@ class TagsFormatter(Formatter):
             except UnexpectedToken:
                 self.skipTo(EndOfCommand)
 
-    def dot11(self):
-        subcmd = self.expect(Keyword)
-        if subcmd == 'ssid':
-            ssid = self.accept(String)
-            self.expect(EndOfCommand)
-            
-            while True:
-                if self.accept(Whitespace) is None:
-                    return
-                
-                try:
-                    op = self.accept(Operator)
-                    cmd = self.expect(Keyword)
-                    
-                    if False:
-                        pass
-                        
-                    elif cmd == "vlan":
-                        vlan_id = self.expect(Literal)
-                        ssidDict[vlan_id] = ssid
-                        ssidLineDict[vlan_id] = self.lineNum
-                        t = taglib.tag("VLAN ID", vlan_id, sort_name="%05d" % int(vlan_id))
-                        t.used()
-                        self.expect(EndOfCommand)
-                        
-                    else:
-                        self.skipTo(EndOfCommand)
-                        
-                except UnexpectedToken:
-                    self.skipTo(EndOfCommand)
-        else:
-            self.skipTo(EndOfCommand)  
-        
     def interface(self):
         name = self.expect(Name)
    
-        if_tag = taglib.tag("interface", 
-                            "%s %s" % (taglib.env_tags.device.name, name))
-        if_tag.implied_by(taglib.env_tags.snapshot, self.lineNum)
-        if_tag.implies(taglib.env_tags.device, self.lineNum)
-        if_tag.implies(taglib.tag("interface type", 
-                                  re.sub(r"[0-9/.]+$", "", name)),
-                       self.lineNum)
+        if name == 'preconfigure':
+            active = False
+        else:
+            active = True
         
-        m = re.match(r"(Dot11Radio[0-9]+)(\.)?([0-9]+)?$", name)
-        if m:
-            if not m.group(2):
-                ssidsForInterface[m.group(1)] = []
-                if_tag.implies(taglib.tag("interface type", "wireless"), self.lineNum)
+        if active:
+            if_tag = taglib.tag("interface", 
+                                "%s %s" % (taglib.env_tags.device.name, name))
+            if_tag.implied_by(taglib.env_tags.snapshot, self.lineNum)
+            if_tag.implies(taglib.env_tags.device, self.lineNum)
+            if_tag.implies(taglib.tag("interface type", 
+                                      re.sub(r"[0-9/.]+$", "", name)),
+                           self.lineNum)
                 
-            if m.group(3):
-                t = taglib.tag("VLAN ID", m.group(3), sort_name="%05d" % int(m.group(3)))
-                t.implied_by(if_tag, self.lineNum)
-                if ssidDict[m.group(3)] in ssidsForInterface[m.group(1)]:
-                    t = taglib.tag("SSID", ssidDict[m.group(3)])
-                    t.implied_by(if_tag, ssidLineDict[m.group(3)])
-        
         self.expect(EndOfCommand)
         while True:
             
@@ -245,26 +198,39 @@ class TagsFormatter(Formatter):
 
                 elif cmd == "description":
                     description = self.expect(String)
-                    t = taglib.tag("interface description", description)
-                    t.implied_by(if_tag, self.lineNum)
+                    if active:
+                        t = taglib.tag("interface description", description)
+                        t.implied_by(if_tag, self.lineNum)
                     self.expect(EndOfCommand)
-
-                elif cmd == "ip":
-                    self.ip(if_tag=if_tag, version="IPv4")
+                    
+                elif cmd == "ipv4":
+                    self.ip(if_tag=if_tag, version="IPv4", active=active)
 
                 elif cmd == "ipv6":
-                    self.ip(if_tag=if_tag, version="IPv6")
-                    
-                elif cmd == "ssid":
-                    if m and not m.group(2):
-                        ssidsForInterface[m.group(1)].append(self.expect(Literal))
-                    self.expect(EndOfCommand)
-                        
+                    self.ip(if_tag=if_tag, version="IPv6", active=active)
+                
                 else:
                     self.skipTo(EndOfCommand)
 
             except UnexpectedToken:
                 self.skipTo(EndOfCommand)
+                
+    
+    def domain(self):
+        cmd = self.expect(Keyword)
+
+        if cmd == "name":
+            t = taglib.tag("domain name", self.expect(String))
+            t.implied_by(taglib.env_tags.device, self.lineNum)
+            self.expect(EndOfCommand)
+            
+        elif cmd == 'name-server':
+            t = taglib.tag("name server", self.expect(Literal))
+            t.implied_by(taglib.env_tags.device, self.lineNum)
+            self.expect(EndOfCommand)
+            
+        else:
+            self.skipTo(EndOfCommand)
 
     def radius(self):
         cmd = self.expect(Keyword)
@@ -346,16 +312,36 @@ class TagsFormatter(Formatter):
         self.skipTo(EndOfCommand)
 
     def ntp(self):
-        cmd = self.expect(Keyword)
+        self.expect(EndOfCommand)
+        
+        while True:
+            
+            if self.accept(Whitespace) is None:
+                return
 
-        if cmd == "server":
-            t = taglib.tag("NTP server", self.expect(Literal))
-            t.implied_by(taglib.env_tags.device, self.lineNum)
+            if self.accept(Comment) is not None:
+                self.skipTo(EndOfCommand)
+                continue
+                
+            try:
+                cmd = self.expect(Keyword)
 
-        self.skipTo(EndOfCommand)
+                if False:
+                    pass
+
+                elif cmd == "server":
+                    t = taglib.tag("NTP server", self.expect(Literal))
+                    t.implied_by(taglib.env_tags.device, self.lineNum)
+                    self.expect(EndOfCommand)
+                                    
+                else:
+                    self.skipTo(EndOfCommand)
+
+            except UnexpectedToken:
+                self.skipTo(EndOfCommand)
 
 
-    def ip(self, if_tag=None, version=None):
+    def ip(self, if_tag=None, version=None, active=True):
         cmd = self.expect(Keyword)
 
         if False:
@@ -369,23 +355,19 @@ class TagsFormatter(Formatter):
                 if name:
                     ipaddress = IPy.intToIp(IPy.IP(ipaddress).int() | ipv6_general_prefixes[name].int(), 6)
                 address = ipaddress + "/" + self.expect(Literal)
-                ifaddr_tag = taglib.ip_address_tag(address, 
-                                                   kind="interface address")
-                address_tag = taglib.ip_address_tag(address)
-                subnet_tag = taglib.ip_subnet_tag(address)
-                ifaddr_tag.implied_by(if_tag, self.lineNum)
-                address_tag.implied_by(ifaddr_tag, self.lineNum)
-                subnet_tag.implied_by(address_tag, self.lineNum)
-                if version:
-                    version_tag = taglib.tag("IP version", version)
-                    version_tag.implied_by(if_tag, self.lineNum)
+                if active:
+                    ifaddr_tag = taglib.ip_address_tag(address, 
+                                                       kind="interface address")
+                    address_tag = taglib.ip_address_tag(address)
+                    subnet_tag = taglib.ip_subnet_tag(address)
+                    ifaddr_tag.implied_by(if_tag, self.lineNum)
+                    address_tag.implied_by(ifaddr_tag, self.lineNum)
+                    subnet_tag.implied_by(address_tag, self.lineNum)
+                    if version:
+                        version_tag = taglib.tag("IP version", version)
+                        version_tag.implied_by(if_tag, self.lineNum)
                 
             self.skipTo(EndOfCommand)
-
-        elif cmd == 'domain name' or cmd == 'domain-name':
-            t = taglib.tag("domain name", self.expect(String))
-            t.implied_by(taglib.env_tags.device, self.lineNum)
-            self.expect(EndOfCommand)
 
         elif cmd == 'general-prefix':
             name = self.expect(String)
@@ -396,6 +378,8 @@ class TagsFormatter(Formatter):
             self.expect(EndOfCommand)
             
         elif cmd == 'helper-address':
+            if self.accept(Keyword):
+                self.expect(Literal)
             t = taglib.tag("BOOTP relay", self.expect(Literal))
             t.implied_by(taglib.env_tags.device, self.lineNum)
             self.expect(EndOfCommand)
@@ -409,11 +393,6 @@ class TagsFormatter(Formatter):
                 t = taglib.tag("service", "HTTPS")
                 t.implied_by(taglib.env_tags.device, self.lineNum)
             self.skipTo(EndOfCommand)
-
-        elif cmd == 'name-server':
-            t = taglib.tag("name server", self.expect(Literal))
-            t.implied_by(taglib.env_tags.device, self.lineNum)
-            self.expect(EndOfCommand)
             
         elif cmd == 'scp':
             nextCmd = self.expect(Keyword)
@@ -424,35 +403,33 @@ class TagsFormatter(Formatter):
                     t.implied_by(taglib.env_tags.device, self.lineNum)
             self.skipTo(EndOfCommand)
 
-        elif cmd == 'ssh':
-            if self.sshEnabled == False:
-                t = taglib.tag("service", taglib.protocol_name(cmd))
-                t.implied_by(taglib.env_tags.device, self.lineNum)
-                self.sshEnabled = True
-            nextCmd = self.expect(Keyword)
-            if nextCmd == 'version':
-                version = self.expect(Literal)
-                if version == '2':
-                    t = taglib.tag("service", taglib.protocol_name(cmd))
-                    t.implied_by(taglib.env_tags.device, self.lineNum)
-                    t = taglib.tag("service", "SSHv2")
-                    t.implied_by(taglib.env_tags.device, self.lineNum)
-                elif version == '1':
-                    t = taglib.tag("service", taglib.protocol_name(cmd))
-                    t.implied_by(taglib.env_tags.device, self.lineNum)
-                    t = taglib.tag("service", "SSHv1")
-                    t.implied_by(taglib.env_tags.device, self.lineNum)
-            self.skipTo(EndOfCommand)
-
         else:
             self.skipTo(EndOfCommand)
 
+    def ssh(self):
+        protocol = 'ssh'
+        
+        nextCmd = self.expect(Keyword)
+        if nextCmd == 'server':
+            if self.sshEnabled == False:
+                t = taglib.tag("service", taglib.protocol_name(protocol))
+                t.implied_by(taglib.env_tags.device, self.lineNum)
+                self.sshEnabled = True
+                t = taglib.tag("service", "SSHv2")
+                t.implied_by(taglib.env_tags.device, self.lineNum)
+            
+                version = self.accept(Keyword)
+                if not version == 'v2':
+                    t = taglib.tag("service", "SSHv1")
+                    t.implied_by(taglib.env_tags.device, self.lineNum)
+                    
+        self.skipTo(EndOfCommand)
 
 def main():
     filename = taglib.default_filename
     content = open(filename).read()
 
-    lexer = pygments.lexers.get_lexer_by_name("ios")
+    lexer = pygments.lexers.guess_lexer_for_filename(filename, content)
     formatter = TagsFormatter(fn=filename)
 
     pygments.highlight(content, lexer, formatter, sys.stdout)

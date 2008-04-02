@@ -49,7 +49,7 @@ class IosXRLexer(RegexLexer):
             (r'clock(?=\s)', Keyword, 'slurp'),
             (r'controller(?=\s)', Keyword, ('controller', 'litInterfaceName')),
             (r'control-plane(?=\s)', Keyword, 'control-plane'),
-            (r'domain(?=\s)', Keyword, 'slurp'),
+            (r'domain(?=\s)', Keyword, 'domain'),
             (r'hostname(?=\s)', Keyword, 'litString'),
             (r'hw-module(?=\s)', Keyword, 'slurp'),
             (r'interface(?=\s)', Keyword, ('interface', 'litInterfaceName')),
@@ -61,7 +61,7 @@ class IosXRLexer(RegexLexer):
             (r'router(?=\s)', Keyword, 'router'),
             (r'route-policy(?=\s)', Keyword, 'slurp'),
             (r'snmp-server(?=\s)', Keyword, 'snmp-server'),
-            (r'ssh(?=\s)', Keyword, 'slurp'),
+            (r'ssh(?=\s)', Keyword, 'ssh'),
             (r'tcp(?=\s)', Keyword, 'slurp'),
             (r'telnet(?=\s)', Keyword, 'slurp'),
             (r'template(?=\s)', Keyword, ('template', 'slurp')),
@@ -127,7 +127,15 @@ class IosXRLexer(RegexLexer):
             (r'\s', Text),
             (r'^(?=\S)', Text, '#pop'),
             ],
-            
+          
+        'domain': [
+            (r'$', Text, '#pop'),
+            (r'\s', Text),
+            (r'list(?=\s)', Keyword, 'litBareWord'),
+            (r'name-server(?=\s)', Keyword, 'litAddress'),
+            (r'name(?=\s)', Keyword, 'litBareWord'),
+            ],
+              
         'interface': [
             (r'^\s+', Whitespace),
             (r'\s', Text),
@@ -222,9 +230,6 @@ class IosXRLexer(RegexLexer):
             (r'dhcp-client(?=\s)', Keyword, 'slurp'),
             (r'dhcp-server(?=\s)', Keyword, 'slurp'),
             (r'directed-broadcast(?=\s)', Keyword, 'slurp'),
-            (r'domain-list(?=\s)', Keyword, 'litBareWord'),
-            (r'domain(-|\s)lookup(?=\s)', Keyword, 'slurp'),
-            (r'domain(-|\s)name(?=\s)', Keyword, 'litBareWord'),
             (r'drp(?=\s)', Keyword, 'slurp'),
             (r'dvmrp(?=\s)', Keyword, 'slurp'),
             (r'extcommunity-list(?=\s)', Keyword, 'slurp'),
@@ -239,7 +244,7 @@ class IosXRLexer(RegexLexer):
             (r'general-prefix(?=\s)', Keyword, 'ip-address'),
             (r'gratuitous-arps(?=\s)', Keyword, 'slurp'),
             (r'hello-interval(?=\s)', Keyword, 'slurp'),
-            (r'helper-address(?=\s)', Keyword, 'litAddress'),
+            (r'helper-address(?=\s)', Keyword, 'helper-address'),
             (r'hold-time(?=\s)', Keyword, 'slurp'),
             (r'host(?=\s)', Keyword, 'slurp'),
             (r'host-routing(?=\s)', Keyword, 'slurp'),
@@ -289,7 +294,6 @@ class IosXRLexer(RegexLexer):
             (r'security(?=\s)', Keyword, 'slurp'),
             (r'split-horizon(?=\s)', Keyword, 'slurp'),
             (r'source-route(?=\s)', Keyword, 'slurp'),
-            (r'ssh(?=\s)', Keyword, 'ssh'),
             (r'subnet-zero(?=\s)', Keyword, 'slurp'),
             (r'summary-address(?=\s)', Keyword, 'slurp'),
             (r'tacacs(?=\s)', Keyword, 'slurp'),
@@ -312,6 +316,13 @@ class IosXRLexer(RegexLexer):
             include('litInteger'),
             include('litString'),
             (r'in|out', Keyword, '#pop'),
+            ],
+
+        'helper-address': [
+            (r'$', Text, '#pop'),
+            (r'\s', Text),
+            (r'vrf(?=\s)', Keyword, 'litString'),
+            include('litAddress'),
             ],
 
         'ip-address': [
@@ -377,7 +388,6 @@ class IosXRLexer(RegexLexer):
             (r'server(?=\s)', Keyword, 'litAddress'),
             (r'source(?=\s)', Keyword, 'slurp'),
             (r'update-calendar(?=\s)', Keyword, 'slurp'),
-            (r'no(?=\s)', Operator.Word),
             ],
 
         'scp': [
@@ -390,8 +400,14 @@ class IosXRLexer(RegexLexer):
         'ssh': [
             (r'$', Text, '#pop'),
             (r'\s', Text),
-            (r'version(?=\s)', Keyword, 'litInteger'),
-            (r'\S+', Keyword.Pseudo, 'slurp'),
+            (r'server(?=\s)', Keyword, 'ssh-server'),
+            ],
+            
+        'ssh-server': [
+            (r'$', Text, '#pop'),
+            (r'\s', Text),
+            (r'v2(?=\s)', Keyword),
+            (r'session-limit(?=\s)', Keyword, 'litInteger'),
             ],
 
         'line': [
