@@ -452,7 +452,7 @@ def main():
     filename = taglib.default_filename
     content = open(filename).read()
 
-    lexer = pygments.lexers.guess_lexer_for_filename(filename, content)
+    lexer = pygments.lexers.get_lexer_by_name("ios")
     formatter = TagsFormatter(fn=filename)
 
     pygments.highlight(content, lexer, formatter, sys.stdout)
