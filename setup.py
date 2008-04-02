@@ -79,6 +79,7 @@ setup(
             
         "pygments.lexers": [
             "ios = canner.syntax:IosLexer",
+            "ios_xr = canner.syntax:IosXRLexer",
             "junos = canner.syntax:JunosLexer",
             ],
         "pygments.formatters": [

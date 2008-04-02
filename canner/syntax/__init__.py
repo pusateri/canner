@@ -18,5 +18,6 @@
 #
 
 from .IosLexer import IosLexer
+from .IosXRLexer import IosXRLexer
 from .JunosLexer import JunosLexer
 from .CannerHtmlFormatter import CannerHtmlFormatter
