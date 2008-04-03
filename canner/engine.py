@@ -123,24 +123,6 @@ class Engine(object):
         if content is not None:
             with open(filename, "w") as f:
                 f.write(content)
-        else:
-            with open(filename) as f:
-                content = f.read()
-        try:
-            lexer = pygments.lexers.guess_lexer_for_filename(filename, content, 
-                                                             stripnl=False)
-        except pygments.util.ClassNotFound:
-            lexer = pygments.lexers.get_lexer_for_mimetype('text/plain', 
-                                                           stripnl=False)
-        formatter = pygments.formatters.get_formatter_by_name(
-                'canner', full=True, encoding='utf-8',
-                linenos='inline', cssfile='code-default.css')
-        outFilename = os.path.join('Contents', 'Resources', filename + '.html')
-        outDir = os.path.dirname(outFilename)
-        if not os.path.isdir(outDir):
-            os.makedirs(outDir)
-        with open(outFilename, 'w') as f:
-            result = pygments.highlight(content, lexer, formatter, f)
 
     def addFileTagRef(self, filename, content=None):
         self.addFile(filename, content)
@@ -300,12 +282,59 @@ class Engine(object):
             for line in f:
                 k, _, v = line.partition("=")
                 si[k.strip()] = v.strip()
+        for name in self.interestingFiles():
+            self.addFileTagRef(name)
 
+    def interestingFiles(self):
         for name in os.listdir("."):
             if name.startswith(".") or name.endswith("~") \
                     or name in ("Contents", "pexpect.log"):
                 continue
-            self.addFileTagRef(name)
+            yield name
+
+    def syntaxHighlightFile(self, filename, syntax=None):
+        with open(filename) as f:
+                content = f.read()
+                
+        try:
+            if syntax:
+                lexer = pygments.lexers.get_lexer_by_name(syntax, stripnl=False)
+            else:
+                lexer = pygments.lexers.guess_lexer_for_filename(
+                            filename, content, stripnl=False)
+        except pygments.util.ClassNotFound:
+            lexer = pygments.lexers.get_lexer_by_name("text", stripnl=False)
+        formatter = pygments.formatters.get_formatter_by_name(
+                "canner", full=True, encoding="utf-8",
+                linenos="inline", cssfile="code-default.css")
+
+        self.logger.info("syntax highlighting file '%s' with '%s'" % (
+            filename, lexer.name))
+
+        outFilename = os.path.join("Contents", "Resources", filename + ".html")
+        outDir = os.path.dirname(outFilename)
+        if not os.path.isdir(outDir):
+            os.makedirs(outDir)
+        with open(outFilename, "w") as f:
+            result = pygments.highlight(content, lexer, formatter, f)
+
+    def syntaxHighlightFiles(self):
+        file_syntaxes = dict()
+        for syn_tag in (t for t in self.tagRefs if t.startswith("syntax--")):
+            syntax = syn_tag[8:]
+            for tag_ref in self.tagRefs[syn_tag]:
+                context_tag = tag_ref.get("context")
+                assert context_tag and context_tag.startswith("file--")
+                context = context_tag[6:]
+                self.logger.debug("found syntax '%s' for '%s'" % (
+                    syntax, context))
+                assert file_syntaxes.get(context, "") in ("", syntax)
+                file_syntaxes[context] = syntax
+
+        for filename in self.interestingFiles():
+            syntax = file_syntaxes.get(filename, None)
+            self.syntaxHighlightFile(filename, syntax)
+
 
     def generateTags(self):
         self.loadTagDir('internal--startup', self.taggersDir)
@@ -314,6 +343,8 @@ class Engine(object):
             self.activelyGenerateTags()
         else:
             self.passivelyGenerateTags()
+
+        self.syntaxHighlightFiles()
 
 
     def getTagNamesByKind(self, kind):

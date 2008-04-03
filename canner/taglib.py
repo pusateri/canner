@@ -185,3 +185,11 @@ def protocol_name(name):
         'telnets':'TELNETS', 'xnm-clear-text':'XNM', 'xnm-ssl':'XNMS'
         }
     return protocol_names.get(name, name)
+
+
+def output_syntax_tag(syntax_name, filename=None):
+    if not filename:
+	filename = default_filename
+    syntax_tag = tag("syntax", syntax_name)
+    syntax_tag.implied_by(tag("file", filename), filename=filename)
+    output_tagging_log()
