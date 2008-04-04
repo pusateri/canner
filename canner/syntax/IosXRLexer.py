@@ -834,6 +834,7 @@ class IosXRLexer(RegexLexer):
 
         'litInterfaceName': [
             (r'\s', Text),
+            (r'preconfigure(?=\s)', Keyword),
             (r'\S+\s\d{1,2}(/\d+)?', Name.Variable, '#pop'),
             (r'\S+', Name.Variable, '#pop'),
             ],

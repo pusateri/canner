@@ -163,14 +163,13 @@ class TagsFormatter(Formatter):
                 self.skipTo(EndOfCommand)
 
     def interface(self):
+        # preconfigure is inserted into the config before the interface name when the matching
+        # hardware isn't found. for now, lets just ignore these interfaces.
+        inactive = self.accept(Keyword)
         name = self.expect(Name)
-   
-        if name == 'preconfigure':
-            active = False
-        else:
-            active = True
+        if_tag = None
         
-        if active:
+        if not inactive:
             if_tag = taglib.tag("interface", 
                                 "%s %s" % (taglib.env_tags.device.name, name))
             if_tag.implied_by(taglib.env_tags.snapshot, self.lineNum)
@@ -198,16 +197,16 @@ class TagsFormatter(Formatter):
 
                 elif cmd == "description":
                     description = self.expect(String)
-                    if active:
+                    if not inactive:
                         t = taglib.tag("interface description", description)
                         t.implied_by(if_tag, self.lineNum)
                     self.expect(EndOfCommand)
                     
                 elif cmd == "ipv4":
-                    self.ip(if_tag=if_tag, version="IPv4", active=active)
+                    self.ip(if_tag=if_tag, version="IPv4", active=not inactive)
 
                 elif cmd == "ipv6":
-                    self.ip(if_tag=if_tag, version="IPv6", active=active)
+                    self.ip(if_tag=if_tag, version="IPv6", active=not inactive)
                 
                 else:
                     self.skipTo(EndOfCommand)
@@ -429,7 +428,7 @@ def main():
     filename = taglib.default_filename
     content = open(filename).read()
 
-    lexer = pygments.lexers.guess_lexer_for_filename(filename, content)
+    lexer = pygments.lexers.get_lexer_by_name("iosxr")
     formatter = TagsFormatter(fn=filename)
 
     pygments.highlight(content, lexer, formatter, sys.stdout)
