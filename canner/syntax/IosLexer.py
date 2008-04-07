@@ -26,7 +26,7 @@ class IosLexer(RegexLexer):
     FIXME: help should go here
     """
     name = 'Cisco Systems IOS'
-    aliases = ['ios']
+    aliases = ['ios', 'IOS configuration file']
     filenames = ['*.cfg']
 
     tokens = {

@@ -187,9 +187,10 @@ def protocol_name(name):
     return protocol_names.get(name, name)
 
 
-def output_syntax_tag(syntax_name, filename=None):
+def output_kind_of_file(kind, filename=None):
     if not filename:
 	filename = default_filename
-    syntax_tag = tag("syntax", syntax_name)
-    syntax_tag.implied_by(tag("file", filename), filename=filename)
+    file_kind_tag = tag(kind, filename)
+    file_kind_tag.implies(tag("file", filename), filename=filename)
     output_tagging_log()
+

@@ -292,23 +292,35 @@ class Engine(object):
                 continue
             yield name
 
-    def syntaxHighlightFile(self, filename, syntax=None):
+    def syntaxHighlightFile(self, filename, *syntaxes):
         with open(filename) as f:
                 content = f.read()
                 
-        try:
-            if syntax:
-                lexer = pygments.lexers.get_lexer_by_name(syntax, stripnl=False)
-            else:
-                lexer = pygments.lexers.guess_lexer_for_filename(
-                            filename, content, stripnl=False)
-        except pygments.util.ClassNotFound:
+        lexers = set()
+        for syntax in syntaxes:
+            try:
+                lexers.add(pygments.lexers.get_lexer_by_name(syntax, 
+                    stripnl=False))
+            except pygments.util.ClassNotFound:
+                pass
+        if not lexers:
+            try:
+                lexers.add(pygments.lexers.guess_lexer_for_filename(
+                            filename, content, stripnl=False))
+            except pygments.util.ClassNotFound:
+                pass
+        if len(lexers) == 1:
+            lexer = lexers.pop()
+        else:
+            if len(lexers) > 1:
+                self.logger.error("multiple lexers found for '%s'" % filename)
             lexer = pygments.lexers.get_lexer_by_name("text", stripnl=False)
+
         formatter = pygments.formatters.get_formatter_by_name(
                 "canner", full=True, encoding="utf-8",
                 linenos="inline", cssfile="code-default.css")
 
-        self.logger.info("syntax highlighting file '%s' with '%s'" % (
+        self.logger.info("syntax highlighting file '%s' as '%s'" % (
             filename, lexer.name))
 
         outFilename = os.path.join("Contents", "Resources", filename + ".html")
@@ -319,21 +331,30 @@ class Engine(object):
             result = pygments.highlight(content, lexer, formatter, f)
 
     def syntaxHighlightFiles(self):
-        file_syntaxes = dict()
-        for syn_tag in (t for t in self.tagRefs if t.startswith("syntax--")):
-            syntax = syn_tag[8:]
-            for tag_ref in self.tagRefs[syn_tag]:
-                context_tag = tag_ref.get("context")
-                assert context_tag and context_tag.startswith("file--")
-                context = context_tag[6:]
-                self.logger.debug("found syntax '%s' for '%s'" % (
-                    syntax, context))
-                assert file_syntaxes.get(context, "") in ("", syntax)
-                file_syntaxes[context] = syntax
-
         for filename in self.interestingFiles():
-            syntax = file_syntaxes.get(filename, None)
-            self.syntaxHighlightFile(filename, syntax)
+            file_tag = "file--" + filename
+            if file_tag not in self.tagRefs:
+                self.logger.warning("creating missing file tag for '%s'",
+                                    filename)
+                self.addFileTagRef(filename)
+
+            ancestors = set()
+            tocheck = set()
+            tocheck.add(file_tag)
+            while tocheck:
+                for tag_ref in self.tagRefs[tocheck.pop()]:
+                    if "context" not in tag_ref: continue
+                    context_tag = tag_ref["context"]
+                    if context_tag not in ancestors \
+                            and not context_tag.startswith("snapshot--"):
+                        ancestors.add(context_tag)
+                        tocheck.add(context_tag)
+
+            syntaxes = [t.partition("--")[0] for t in ancestors]
+            self.logger.debug("for file '%s' found syntaxes %r",
+                    filename, syntaxes)
+
+            self.syntaxHighlightFile(filename, *syntaxes)
 
 
     def generateTags(self):

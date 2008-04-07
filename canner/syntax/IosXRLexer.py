@@ -26,7 +26,7 @@ class IosXRLexer(RegexLexer):
     FIXME: help should go here
     """
     name = 'Cisco Systems IOS XR'
-    aliases = ['iosxr']
+    aliases = ['iosxr', 'IOS XR configuration file']
     filenames = ['*.xrcfg']
 
     tokens = {

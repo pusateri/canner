@@ -20,4 +20,4 @@
 #
 
 from canner import taglib
-taglib.output_syntax_tag("iosxr")
+taglib.output_kind_of_file("IOS XR configuration file")
