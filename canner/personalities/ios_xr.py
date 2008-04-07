@@ -24,7 +24,7 @@ import re
 
 class IOSXRPersonality(IOSPersonality):
 
-    os_name = "IOSXR"
+    os_name = "IOS XR"
 
     @classmethod
     def match(cls, info):
