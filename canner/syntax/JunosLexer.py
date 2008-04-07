@@ -25,7 +25,7 @@ class JunosLexer(RegexLexer):
     FIXME: help should go here
     """
     name = 'Juniper Networks JUNOS'
-    aliases = ['junos']
+    aliases = ['junos', "JUNOS configuration file"]
     filenames = ['*.conf']
     tokens = {
         'root': [
