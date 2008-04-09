@@ -72,6 +72,7 @@ setup(
             "ios = canner.personalities.ios:IOSPersonality",
             "ios_xr = canner.personalities.ios_xr:IOSXRPersonality",
             "junos = canner.personalities.junos:JUNOSPersonality",
+            "netgear = canner.personalities.netgear:NETGEARPersonality",
             "netscreen = canner.personalities.netscreen:NetscreenPersonality",
             "procket = canner.personalities.procket:ProcketPersonality",
             "smc = canner.personalities.smc:SMCPersonality",
