@@ -35,7 +35,7 @@ from setuptools import setup
 
 setup(
     name = "Canner",
-    version = "0.1",
+    version = "0.2",
     author = __author__,
     author_email = "support@bang.com",
     url = "canner.bangj.com",
