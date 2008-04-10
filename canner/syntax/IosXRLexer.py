@@ -21,6 +21,8 @@ from pygments.lexer import RegexLexer, bygroups, include
 from pygments.token import *
 import IPy
 
+EndOfMode = Token.EndOfMode
+
 class IosXRLexer(RegexLexer):
     """
     FIXME: help should go here
@@ -539,6 +541,7 @@ class IosXRLexer(RegexLexer):
             (r'ip(?=\s)', Keyword, 'slurp'),
             (r'match(?=\s)', Keyword, 'slurp'),
             (r'maximum paths(?=\s)', Keyword, 'slurp'),
+            (r'neighbor-group(?=\s)', Keyword, ('bgp neighbor group', 'litString')),
             (r'neighbor(?=\s)', Keyword, ('bgp neighbor', 'litAddress')),
             (r'network(?=\s)', Keyword, 'slurp'),
             (r'no(?=\s)', Operator.Word),
@@ -549,24 +552,57 @@ class IosXRLexer(RegexLexer):
             (r'table-map(?=\s)', Keyword, 'slurp'),
             (r'template(?=\s)', Keyword, 'slurp'),
             (r'timers(?=\s)', Keyword, 'slurp'),
+            (r'vrf(?=\s)', Keyword, 'litString'),
             ],
 
         'bgp neighbor': [
-            (r'$', Text, '#pop'),
             (r'\s', Text),
+            (r'!.*', Comment),
             (r'activate(?=\s)', Keyword, 'slurp'),
+            (r'address-family(?=\s)', Keyword, 'slurp'),
+            (r'advertisement-interval(?=\s)', Keyword, 'litInteger'),
             (r'distribute-list(?=\s)', Keyword, 'slurp'),
             (r'ebgp-multihop(?=\s)', Keyword, 'slurp'),
+            (r'local-as(?=\s)', Keyword, 'as_number'),
             (r'next-hop-self(?=\s)', Keyword, 'slurp'),
             (r'password(?=\s)', Keyword, 'slurp'),
-            (r'remote-as(?=\s)', Keyword, ('slurp', 'litInteger')),
+            (r'remote-as(?=\s)', Keyword, 'as_number'),
+            (r'remove-private-as(?=\s)', Keyword, 'slurp'),
+            (r'route-map(?=\s)', Keyword, 'slurp'),
+            (r'send-community(?=\s)', Keyword, 'slurp'),
+            (r'soft-reconfiguration(?=\s)', Keyword, 'slurp'),
+            (r'update-source(?=\s)', Keyword, 'slurp'),
+            (r'use(?=\s)', Keyword, 'use'),
+            (r'version(?=\s)', Keyword, 'slurp'),
+            (r'(?=\S+)', EndOfMode, '#pop'),
+            ],
+            
+        'use': [
+            (r'$', Text, '#pop'),
+            (r'\s', Text),
+            (r'neighbor-group(?=\s)', Keyword, 'litString'),
+            (r'\S+', Keyword.Pseudo, 'slurp'),
+            ],
+            
+        'bgp neighbor group': [
+            (r'\s', Text),
+            (r'!.*', Comment),
+            (r'activate(?=\s)', Keyword, 'slurp'),
+            (r'address-family(?=\s)', Keyword, 'slurp'),
+            (r'advertisement-interval(?=\s)', Keyword, 'litInteger'),
+            (r'distribute-list(?=\s)', Keyword, 'slurp'),
+            (r'ebgp-multihop(?=\s)', Keyword, 'slurp'),
+            (r'local-as(?=\s)', Keyword, 'as_number'),
+            (r'next-hop-self(?=\s)', Keyword, 'slurp'),
+            (r'password(?=\s)', Keyword, 'slurp'),
+            (r'remote-as(?=\s)', Keyword, 'as_number'),
             (r'remove-private-as(?=\s)', Keyword, 'slurp'),
             (r'route-map(?=\s)', Keyword, 'slurp'),
             (r'send-community(?=\s)', Keyword, 'slurp'),
             (r'soft-reconfiguration(?=\s)', Keyword, 'slurp'),
             (r'update-source(?=\s)', Keyword, 'slurp'),
             (r'version(?=\s)', Keyword, 'slurp'),
-            (r'\S+', Keyword.Pseudo, 'slurp'),
+            (r'(?=\S+)', EndOfMode, '#pop'),
             ],
                 
         'ospf': [
@@ -805,7 +841,13 @@ class IosXRLexer(RegexLexer):
             (r'\s', Text),
             (r'\d+', Number.Integer, '#pop'),
             ],
-
+            
+        'as_number': [
+            (r'$', Text, '#pop'),
+            (r'\s', Text),
+            (r'\d+([\.\:]\d+)?', Number.Integer),
+            ],
+        
         'litBareWord': [
             (r'\s', Text),
             (r'\S+', String, '#pop'),

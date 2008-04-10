@@ -26,7 +26,6 @@ import simplejson
 import IPy; IPy.check_addr_prefixlen = False
 
 
-
 class Tag(object):
     def __init__(self, kind=None, name=None, sort_name=None, display_name=None):
         self.kind = kind
@@ -122,9 +121,14 @@ def ip_subnet_tag(address, kind=None, **kw):
     return tag(kind, name, sort_name=sort_name, **kw)    
 
 def as_number_tag(as_number, kind=None, **kw):
-    as_number = int(as_number)
+    m = re.match(r'(\d+)[\.\:](\d+)', as_number)
+    if m:
+        number = int(m.group(1)) << 16 | int(m.group(2))
+        as_number = "%s.%s" % (m.group(1), m.group(2))
+    else:
+        number = int(as_number)
     if not kind: kind = "AS number"
-    return tag(kind, str(as_number), sort_name="%010d" % as_number)
+    return tag(kind, as_number, sort_name="%010d" % number)
 
 
 _tagging_log = list()
