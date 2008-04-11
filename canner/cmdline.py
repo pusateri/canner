@@ -185,7 +185,7 @@ def start_debug_logging():
     
 
 def create_session(device, options):
-    session = Session(device, 
+    session = Session(device=device, 
                       user=options.user, 
                       password=options.password, 
                       exec_password=options.exec_password, 
