@@ -59,6 +59,8 @@ setup(
 
     test_suite = "tests.suite",
 
+    zip_safe = False,
+
     entry_points = {
         "console_scripts": [
             "canner = canner.cmdline:main",
