@@ -70,7 +70,7 @@ setup(
             # "extreme_xos = canner.personalities.extreme_xos:ExtremeXOSPersonality",
             # "extremeware = canner.personalities.extremeware:ExtremeWarePersonality",
             # "hp_procurve = canner.personalities.hp_procurve:HPProCurvePersonality",
-            # "ios = canner.personalities.ios:IOSPersonality",
+            "ios = canner.personalities.ios:IOSPersonality",
             # "ios_xr = canner.personalities.ios_xr:IOSXRPersonality",
             "junos = canner.personalities.junos:JUNOSPersonality",
             # "netgear = canner.personalities.netgear:NETGEARPersonality",

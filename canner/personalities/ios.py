@@ -28,25 +28,21 @@ class IOSPersonality(Personality):
     in_command_interactions = (
         (r"--More--", " "),
         )
-
-    @classmethod
-    def match(cls, info):
-        return re.search(r"Cisco (IOS|Internetwork Operating System) Software",
-                         info)
+    commands_to_probe = ("show version", )
 
 
-    def setup_session(self):
-        self.session.child.sendline("enable")
-        index = self.session.child.expect([r"[Pp]assword: ?\Z",
+    def setup(self, session):
+        session.connection.sendline("enable")
+        index = session.connection.expect([r"[Pp]assword: ?\Z",
                                            pexpect.TIMEOUT,
-                                           self.session.prompt])
+                                           session.prompt])
         if index == 0:
-            if not self.session.exec_password:
+            if not session.exec_password:
                 raise canner.error("Exec password not specified")
-            self.session.child.sendline(self.session.exec_password)
-            index = self.session.child.expect([r"[Pp]assword: ?\Z",
+            session.connection.sendline(session.exec_password)
+            index = session.connection.expect([r"[Pp]assword: ?\Z",
                                                pexpect.TIMEOUT,
-                                               self.session.prompt])
+                                               session.prompt])
             if index == 0:
                 raise canner.error("Exec password not accepted")
             if index == 1:
@@ -54,5 +50,12 @@ class IOSPersonality(Personality):
         elif index == 1:
             raise canner.error("Problem entering exec mode")
 
-        self.session.issue_command("terminal length 0")
-        self.session.issue_command("terminal width 0")
+        session.perform_command("terminal length 0")
+        session.perform_command("terminal width 0")
+
+    def examine_evidence(self, command, output):
+        if command == "show version" and \
+            re.search(r"Cisco (IOS|Internetwork Operating System) Software",
+                    output):
+            self.add_confidence(0.8)
+
