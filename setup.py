@@ -65,7 +65,7 @@ setup(
             ],
 
         "canner.personalities": [
-            "generic = canner.personalities.generic:GenericPersonality",
+            "bootstrap = canner.personalities.bootstrap:BootstrapPersonality",
             # "dell = canner.personalities.dell:DellPersonality",
             # "extreme_xos = canner.personalities.extreme_xos:ExtremeXOSPersonality",
             # "extremeware = canner.personalities.extremeware:ExtremeWarePersonality",

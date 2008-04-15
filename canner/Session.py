@@ -86,7 +86,8 @@ class Session(object):
             return self.command_cache[command]
 
         self.logger.info("performing command '%s'" % command)
-        self.logger.debug("delegating to personality '%s'", self.personality)
+        self.logger.debug("delegating to personality '%s'", 
+                self.personality.__class__.__name__)
         output = self.personality.perform_command(self, command)
         self.command_cache[command] = output
         return output
@@ -202,7 +203,7 @@ class Session(object):
     def update_candidates(self, command=None, output=None):
         if command:
             for personality in self.candidate_personalities:
-                personality.update_confidence(command, output)
+                personality.examine_evidence(command, output)
 
         self.candidate_personalities.sort(
                 key=operator.attrgetter("confidence"), reverse=True)
@@ -210,6 +211,6 @@ class Session(object):
 
         for candidate in self.candidate_personalities:
             self.logger.debug("canidate personality: %3d%% %s" % (
-                candidate.confidence, candidate))
+                100 * candidate.confidence, candidate.__class__.__name__))
 
 

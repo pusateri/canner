@@ -17,22 +17,19 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from .generic import GenericPersonality
+from . import Personality
 
-class JUNOSPersonality(GenericPersonality):
+class JUNOSPersonality(Personality):
 
     os_name = "JUNOS"
 
-    commands_to_probe = ("show version", )
+    commands_to_probe = ()
 
     def setup(self, session):
         session.perform_command("set cli screen-length 0")
         session.perform_command("set cli screen-width 0")
 
-    def update_confidence(self, command, output):
-        if command == "__login__":
-            if "--- JUNOS " in output:
-                self.confidence = 100
-            else:
-                self.confidence = 0
+    def examine_evidence(self, command, output):
+        if command == "__login__" and "--- JUNOS " in output:
+            self.add_confidence(0.8)
 

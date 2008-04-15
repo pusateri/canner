@@ -24,54 +24,21 @@ from . import Personality
 from .. import error
 
 
-class GenericPersonality(Personality):
+class BootstrapPersonality(Personality):
 
     commands_to_probe = ()
 
-    in_command_interactions = ()
-    scrub_from_output_patterns = (
-        r"\x1b\[[0-9;]*?[a-zA-Z]",
-        r"\r",
-        r"\x08+(\s+\x08+)?",
+    in_command_interactions = (
+        (r"--More--", " "),
         )
-    failed_command_patterns = ()
-
-    logout_command = "exit"
-
 
     def __init__(self):
-        self.logger = logging.getLogger("GenericPersonality")
-        self.confidence = 25 if type(self) == GenericPersonality else 10
+        super(BootstrapPersonality, self).__init__()
+        self.confidence = 0.50
 
 
-    def perform_command(self, session, command):
-        if command == "__login__":
-            return self.login(session)
-        elif command == "__logout__":
-            return self.logout(session)
-        elif command == "__determine_prompt__":
-            return self.determine_prompt(session)
-        elif command == "__setup__":
-            return self.setup(session)
-        elif command.startswith("__"):
-            self.logger.debug("Unknown special command: '%s'" % command)
-            return None
-        else:
-            return self.perform_cli_command(session, command)
-
-
-    #
-    # Callbacks
-    #
-
-
-    def update_confidence(self, command, output):
+    def examine_evidence(self, command, output):
         pass
-
-
-    #
-    # Internal methods
-    #
 
 
     def login(self, session):
@@ -140,60 +107,6 @@ class GenericPersonality(Personality):
         return capturebuf
 
 
-    def logout(self, session):
-        session.connection.sendline(self.logout_command)
-        session.connection.expect(pexpect.EOF)
-
-
-    def determine_prompt(self, session):
-        text = session.perform_command("__login__")
-        last = text[text.rindex("\n")+1:]
-
-        prompt = r"(?m)^\r?" + re.escape(last)
-        prompt = re.sub(r"\d+", r"\d+", prompt)
-        prompt = re.sub(r"\\([%>])((?:\\\s)?)$", r"[\1#]\2", prompt)
-        prompt = prompt + r"\Z"
-
-        return prompt
-
-
     def setup(self, session):
-        pass
-
-
-    def perform_cli_command(self, session, command):
-        session.connection.sendline(command)
-
-        output = ""
-        patterns = [session.prompt]
-        patterns.extend(p[0] for p in self.in_command_interactions)
-        while True:
-            index = session.connection.expect(patterns)
-            output += session.connection.before
-            if index == 0:
-                break
-            else:
-                resp = self.in_command_interactions[index - 1][1]
-                if resp:
-                    session.connection.send(resp)
-
-        scrub_echo_pattern = r"(?s)\r?\n?" + re.escape(command) + r"\s*?\n"
-        output, number_found = re.subn(scrub_echo_pattern, "", output, 1)
-        if number_found != 1:
-            raise error("Problem issuing command")
-
-        output = self.cleanup_output(output)
-        for pattern in self.failed_command_patterns:
-            if re.search(pattern, output):
-                self.logger.debug("command failed\n" + output)
-                return None
-
-        self.logger.debug("output\n" + output)
-        return output
-
-
-    def cleanup_output(self, output):
-        for pattern in self.scrub_from_output_patterns:
-            output = re.sub(pattern, "", output)
-        return output
+        raise error("A suitable personality was not found.")
 
