@@ -25,9 +25,9 @@ class SMCPersonality(Personality):
     in_command_interactions = (
         (r"---More---", " "),
         )
-    commands_to_probe = ("show version", )
+    commands_to_probe = ("show system", )
             
     def examine_evidence(self, command, output):
-        if command == "show version":
-            self.examine_with_pattern(output, 0.8, r"SMC")
+        if command == "show system":
+            self.examine_with_pattern(output, 0.8, r"System description: SMC ")
 
