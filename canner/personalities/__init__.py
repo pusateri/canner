@@ -35,6 +35,9 @@ class Personality(object):
 
     logout_command = "exit"
 
+    commands_to_probe = ()
+
+
     def __init__(self):
         self.logger = logging.getLogger("personality")
         self.confidence_measures = list()
@@ -116,4 +119,8 @@ class Personality(object):
         self.confidence_measures.append(measure)
         self.confidence = 1.0 - reduce(operator.mul, 
                 (1.0 - c for c in self.confidence_measures), 1.0)
+
+    def examine_with_pattern(self, text, confidence, pattern):
+        if re.search(pattern, text):
+            self.add_confidence(confidence)
 

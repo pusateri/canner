@@ -25,11 +25,11 @@ class JUNOSPersonality(Personality):
 
     commands_to_probe = ()
 
+
+    def examine_evidence(self, command, output):
+        if command == "__login__":
+            self.examine_with_pattern(output, 0.8, r"--- JUNOS ")
+
     def setup(self, session):
         session.perform_command("set cli screen-length 0")
         session.perform_command("set cli screen-width 0")
-
-    def examine_evidence(self, command, output):
-        if command == "__login__" and "--- JUNOS " in output:
-            self.add_confidence(0.8)
-

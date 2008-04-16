@@ -24,26 +24,29 @@ import re
 class ExtremeXOSPersonality(Personality):
 
     os_name = "ExtremeXOS"
+    in_command_interactions = (
+        (r"Press <SPACE> to continue or <Q> to quit:", " "),
+        )
     failed_command_patterns = (
         r"Invalid input detected",
         )
     logout_command = "quit"
+    commands_to_probe = ("show version", )
 
-    @classmethod
-    def match(cls, info):
-        return re.search(r"Image.*ExtremeXOS", info)
+    def examine_evidence(self, command, output):
+        if command == "show version":
+            self.examine_with_pattern(output, 0.8, r"Image.*ExtremeXOS")
 
+    def setup_session(self, session):
+        session.issue_command("disable clipaging")
 
-    def setup_session(self):
-        self.session.issue_command("disable clipaging")
-
-    def logout(self):
-        self.session.child.sendline(self.logout_command)
+    def logout(self, session):
+        session.connection.sendline(self.logout_command)
         while True:
-            index = self.session.child.expect(
+            index = session.connection.expect(
                     [pexpect.EOF,
                      r"configuration changes to primary.cfg\? \(y/N\)"])
             if index == 0: break
             elif index == 1:
-                self.session.child.sendline("n")
+                session.connection.sendline("n")
 

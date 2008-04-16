@@ -66,17 +66,17 @@ setup(
 
         "canner.personalities": [
             "bootstrap = canner.personalities.bootstrap:BootstrapPersonality",
-            # "dell = canner.personalities.dell:DellPersonality",
-            # "extreme_xos = canner.personalities.extreme_xos:ExtremeXOSPersonality",
-            # "extremeware = canner.personalities.extremeware:ExtremeWarePersonality",
-            # "hp_procurve = canner.personalities.hp_procurve:HPProCurvePersonality",
+            "dell = canner.personalities.dell:DellPersonality",
+            "extreme_xos = canner.personalities.extreme_xos:ExtremeXOSPersonality",
+            "extremeware = canner.personalities.extremeware:ExtremeWarePersonality",
+            "hp_procurve = canner.personalities.hp_procurve:HPProCurvePersonality",
             "ios = canner.personalities.ios:IOSPersonality",
-            # "ios_xr = canner.personalities.ios_xr:IOSXRPersonality",
+            "ios_xr = canner.personalities.ios_xr:IOSXRPersonality",
             "junos = canner.personalities.junos:JUNOSPersonality",
-            # "netgear = canner.personalities.netgear:NETGEARPersonality",
-            # "netscreen = canner.personalities.netscreen:NetscreenPersonality",
-            # "procket = canner.personalities.procket:ProcketPersonality",
-            # "smc = canner.personalities.smc:SMCPersonality",
+            "netgear = canner.personalities.netgear:NETGEARPersonality",
+            "netscreen = canner.personalities.netscreen:NetscreenPersonality",
+            "procket = canner.personalities.procket:ProcketPersonality",
+            "smc = canner.personalities.smc:SMCPersonality",
             ],
             
         "pygments.lexers": [

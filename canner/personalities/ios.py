@@ -17,8 +17,8 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import canner
 from . import Personality
+import canner
 import pexpect
 import re
 
@@ -30,6 +30,11 @@ class IOSPersonality(Personality):
         )
     commands_to_probe = ("show version", )
 
+
+    def examine_evidence(self, command, output):
+        if command == "show version":
+            self.examine_with_pattern(output, 0.8,
+                    r"Cisco (IOS|Internetwork Operating System) Software")
 
     def setup(self, session):
         session.connection.sendline("enable")
@@ -52,10 +57,4 @@ class IOSPersonality(Personality):
 
         session.perform_command("terminal length 0")
         session.perform_command("terminal width 0")
-
-    def examine_evidence(self, command, output):
-        if command == "show version" and \
-            re.search(r"Cisco (IOS|Internetwork Operating System) Software",
-                    output):
-            self.add_confidence(0.8)
 

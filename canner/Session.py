@@ -61,24 +61,26 @@ class Session(object):
         self.prompt = self.perform_command("__determine_prompt__")
         self.update_candidates("___determine_prompt__", self.prompt)
 
-        while len(self.candidate_personalities) > 1:
-            probes = defaultdict(int)
-            for pers in self.candidate_personalities:
-                for command in pers.commands_to_probe:
-                    if not command in self.command_cache:
-                        probes[command] += 1
-            probes = sorted(probes.iteritems(),
-                    key=operator.itemgetter(1), reverse=True)
-            if not probes:
+        cands = self.candidate_personalities
+
+        # The 25% manditory split is just pulled from thin air.
+        while cands[0].confidence < 0.75 \
+                or (cands[0].confidence - cands[1].confidence) < 0.25:
+            probe_commands = [cmd 
+                    for pers in cands
+                    for cmd in pers.commands_to_probe
+                    if cmd not in self.command_cache]
+            if not probe_commands:
                 break
-            command, count = probes[0]
-            output = self.perform_command(command)
-            self.update_candidates(command, output)
+            output = self.perform_command(probe_commands[0])
+            self.update_candidates(probe_commands[0], output)
+
+        self.logger.debug("personality %s won", 
+                self.personality.__class__.__name__)
 
         self.perform_command("__setup__")
 
         self.os_name = self.personality.os_name
-
 
     def perform_command(self, command, use_cache=True):
         if use_cache and command in self.command_cache:
@@ -86,7 +88,7 @@ class Session(object):
             return self.command_cache[command]
 
         self.logger.info("performing command '%s'" % command)
-        self.logger.debug("delegating to personality '%s'", 
+        self.logger.debug("delegating to '%s'", 
                 self.personality.__class__.__name__)
         output = self.personality.perform_command(self, command)
         self.command_cache[command] = output
@@ -210,7 +212,7 @@ class Session(object):
         self.personality = self.candidate_personalities[0]
 
         for candidate in self.candidate_personalities:
-            self.logger.debug("canidate personality: %3d%% %s" % (
+            self.logger.debug("canidate: %3d%% %s" % (
                 100 * candidate.confidence, candidate.__class__.__name__))
 
 

@@ -25,8 +25,9 @@ class SMCPersonality(Personality):
     in_command_interactions = (
         (r"---More---", " "),
         )
+    commands_to_probe = ("show version", )
             
-    @classmethod
-    def match(cls, info):
-        return "SMC" in info
+    def examine_evidence(self, command, output):
+        if command == "show version":
+            self.examine_with_pattern(output, 0.8, r"SMC")
 

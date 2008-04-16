@@ -24,12 +24,15 @@ class DellPersonality(Personality):
     
     os_name = "Dell"
     in_command_interactions = (
-        (r"More: <space>, Quit: q, One line: <return> ", " "),
+        (r"More: <space>,\s+Quit: q,\s+One line: <return> ", " "),
         )
+    commands_to_probe = ("show system", )
             
-    @classmethod
-    def match(cls, info):
-        return re.search(r"SW version", info)
+    def examine_evidence(self, command, output):
+        if command == "show version":
+            self.examine_with_pattern(output, 0.2, r"SW version")
+        elif command == "show system":
+            self.examine_with_pattern(output, 0.8, r"Type:\s+PowerConnect")
 
-    def setup_session(self):
-        self.session.issue_command("terminal datadump")
+    def setup_session(self, session):
+        session.issue_command("terminal datadump")
