@@ -25,26 +25,28 @@ class HPProCurvePersonality(Personality):
     # TODO: figure out how to handle files longer than 1000 lines
 
     os_name = "HPProCurve"
+    in_command_interactions = (
+        (r"\s*-\Z", " "),
+        )
     logout_command = "logout"
 
-    @classmethod
-    def match(cls, info):
-        return re.search(r"HP.* ProCurve ", info)
+    def examine_evidence(self, command, output):
+        if command == "__login__":
+            self.examine_with_pattern(output, 0.8, r"HP.* ProCurve ")
 
+    def setup_session(self, session):
+        session.issue_command("terminal length 1000")
+        session.issue_command("terminal width 1920")
 
-    def setup_session(self):
-        self.session.issue_command("terminal length 1000")
-        self.session.issue_command("terminal width 1920")
-
-    def logout(self):
-        self.session.child.sendline(self.logout_command)
+    def logout(self, session):
+        session.connection.sendline(self.logout_command)
         while True:
-            index = self.session.child.expect(
+            index = session.connection.expect(
                     [pexpect.EOF,
                      r"Do you want to log out \[y/n\]\? ",
                      r"(?i)save current configuration \[y/n\]\?"])
             if index == 0: break
             elif index == 1:
-                self.session.child.sendline("y")
+                session.connection.sendline("y")
             elif index == 2:
-                self.session.child.sendline("n")
+                session.connection.sendline("n")

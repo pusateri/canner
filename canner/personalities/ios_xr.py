@@ -17,15 +17,13 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import canner
 from .ios import IOSPersonality
-import pexpect
 import re
 
 class IOSXRPersonality(IOSPersonality):
 
     os_name = "IOS XR"
 
-    @classmethod
-    def match(cls, info):
-        return re.search(r"Cisco IOS XR Software", info)
+    def examine_evidence(self, command, output):
+        if command == "show version":
+            self.examine_with_pattern(output, 0.8, r"Cisco IOS XR Software")

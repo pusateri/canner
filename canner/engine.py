@@ -264,12 +264,11 @@ class Engine(object):
         self.addFileTagRef("sessionInfo", s)
 
         self.addFileTagRef("login.log", self.session.login_info)
-        self.addFileTagRef("version.log", self.session.version_info)
 
         while self.pendingCommands:
             command, filename = self.pendingCommands.pop()
             assert not os.path.exists(filename)
-            content = self.session.issue_command(command)
+            content = self.session.perform_command(command)
             if content:
                 self.addFileTagRef(filename, content)
 

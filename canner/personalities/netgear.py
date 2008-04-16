@@ -28,18 +28,27 @@ class NETGEARPersonality(Personality):
     in_command_interactions = (
         (r"--More-- or \(q\)uit", " "),
         )
+    commands_to_probe = ("show hardware", )
             
-    @classmethod
-    def match(cls, info):
-        return re.search(r"[FG]SM\d\d\d\d.*", info)
+    def examine_evidence(self, command, output):
+        if command == "__login__":
+            self.examine_with_pattern(output, 0.4, r"[FG]SM\d\d\d\d")
 
-    def logout(self):
-        self.session.child.sendline(self.logout_command)
+        elif command == "show hardware":
+            self.examine_with_pattern(output, 0.6, 
+                    r"Machine Model.* [FG]SM\d+")
+
+        elif command == "show version":
+            if output is None:
+                self.add_confidence(0.4)
+
+    def logout(self, session):
+        session.connection.sendline(self.logout_command)
         while True:
-            index = self.session.child.expect(
+            index = session.connection.expect(
                     [pexpect.EOF,
                      r"Would you like to save them now\? \(y/n\) "])
             if index == 0: break
             elif index == 1:
-                self.session.child.sendline("n")
+                session.connection.sendline("n")
             

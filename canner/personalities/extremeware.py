@@ -28,19 +28,18 @@ class ExtremeWarePersonality(Personality):
         (r"Press <SPACE> to continue or <Q> to quit:", " "),
         )
     logout_command = "quit"
+    commands_to_probe = ("show version", )
 
-    @classmethod
-    def match(cls, info):
-        return re.search(r"(?i)Image.*ExtremeWare", info)
+    def examine_evidence(self, command, output):
+        if command == "show version":
+            self.examine_with_pattern(output, 0.8, r"(?i)Image.*ExtremeWare")
 
-
-    def logout(self):
-        self.session.child.sendline(self.logout_command)
+    def logout(self, session):
+        session.connection.sendline(self.logout_command)
         while True:
-            index = self.session.child.expect(
-                    [pexpect.EOF,
-                     r"configuration changes\? \(y/n\)"])
+            index = session.connection.expect(
+                    [pexpect.EOF, r"configuration changes\? \(y/n\)"])
             if index == 0: break
             elif index == 1:
-                self.session.child.sendline("n")
+                session.connection.sendline("n")
 
