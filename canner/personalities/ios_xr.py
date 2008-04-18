@@ -17,13 +17,21 @@
 # along with Canner.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from .ios import IOSPersonality
+from . import Personality
 import re
 
-class IOSXRPersonality(IOSPersonality):
+class IOSXRPersonality(Personality):
 
-    os_name = "IOS XR"
+    os_name = "IOSXR"
+    in_command_interactions = (
+        (r"--More--", " "),
+        )
+    commands_to_probe = ("show version", )
 
     def examine_evidence(self, command, output):
         if command == "show version":
             self.examine_with_pattern(output, 0.8, r"Cisco IOS XR Software")
+
+    def setup(self, session):
+        session.perform_command("terminal length 0")
+        session.perform_command("terminal width 0")
