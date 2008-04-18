@@ -1,7 +1,6 @@
 ^build/
 ^dist/
 ^Canner.egg-info/
-^setuptools-.*egg
 
 syntax: glob
 *.pyc
