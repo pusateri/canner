@@ -44,33 +44,27 @@ HEADER = '''\
 
 LINENOS = '''\
 body {
-    counter-reset: line;
     margin: 0;
     font-size: 9pt;
 }
 
-.gutter:before {
+span.lineno {
     display: inline-block;
-    width: 3em;
+    width: 4em;
     overflow: hidden;
-    margin-right: 4pt;
+    margin: 0 4pt 0 0;
     background: rgb(200,200,200);
     padding: 1px 3px 1px 0;
     border-right: thin solid black;
     font-family: Helvetica;
     font-size: 8pt;
     text-align: right;
-    content: "  ";
     -webkit-user-select: none;
 }
 
 .code {
     white-space: pre;
     font-family: Courier;
-}
-.code:before {
-    content: counter(line);
-    counter-increment: line;
 }
 
 .diffadd {
@@ -99,7 +93,7 @@ class CannerHtmlFormatter(HtmlFormatter):
     def _wrap_inlinelinenos(self, inner):
         num = 1
         for t, line in inner:
-            yield 1, '<div id="line-%d" class="code gutter">' % num + line.rstrip('\n') + '</div>\n'
+            yield 1, '<div id="line-%d" class="code"><span class="lineno">%d</span>' % (num, num) + line.rstrip('\n') + '</div>\n'
             num += 1
 
     def wrap(self, source, outfile):
