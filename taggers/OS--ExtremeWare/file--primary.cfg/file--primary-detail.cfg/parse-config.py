@@ -38,7 +38,8 @@ def main(filename):
         
         if re.match(r'Syntax error at token detail', line):
             lines.close()
-            main(re.sub(r'-detail', '', filename))
+            taglib.default_filename = filename = re.sub(r'-detail', '', filename)
+            main(filename)
             return
 
         # time
