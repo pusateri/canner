@@ -59,7 +59,7 @@ setup(
 
     test_suite = "tests.suite",
 
-    zip_safe = False,
+    zip_safe = True,
 
     entry_points = {
         "console_scripts": [
