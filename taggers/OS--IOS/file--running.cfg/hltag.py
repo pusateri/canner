@@ -253,7 +253,16 @@ class TagsFormatter(Formatter):
                     self.ip(if_tag=if_tag, version="IPv4")
 
                 elif cmd == "ipv6":
-                    self.ip(if_tag=if_tag, version="IPv6")
+                    ra = self.ip(if_tag=if_tag, version="IPv6")
+                    # (ra_suppress, ra_line, if_prefix, ra_prefix)
+                    if not ra[0] and ra[1]:
+                        ratag = taglib.tag("ra server", if_tag.name)
+                        if len(ra[3]):
+                            for p in ra[3]:
+                                ratag.implies(taglib.ip_subnet_tag(p), ra[1])
+                        else:
+                            for p in ra[2]:
+                                ratag.implies(taglib.ip_subnet_tag(p), ra[1])
                     
                 elif cmd == "ssid":
                     if m and not m.group(2):
@@ -356,6 +365,10 @@ class TagsFormatter(Formatter):
 
 
     def ip(self, if_tag=None, version=None):
+        ra_line = None
+        ra_suppress = False
+        ra_prefix = []
+        if_prefix = []
         cmd = self.expect(Keyword)
 
         if False:
@@ -379,7 +392,12 @@ class TagsFormatter(Formatter):
                 if version:
                     version_tag = taglib.tag("IP version", version)
                     version_tag.implied_by(if_tag, self.lineNum)
-                
+                    
+                    # add router advertisement by default on multi-access networks
+                    if version == 'IPv6' and re.search(r"eth|fddi|port-channel", if_tag.name, re.I):
+                        if_prefix.append(subnet_tag.name)
+                        ra_line = self.lineNum
+                    
             self.skipTo(EndOfCommand)
 
         elif cmd == 'domain name' or cmd == 'domain-name':
@@ -414,7 +432,22 @@ class TagsFormatter(Formatter):
             t = taglib.tag("name server", self.expect(Literal))
             t.implied_by(taglib.env_tags.device, self.lineNum)
             self.expect(EndOfCommand)
-            
+        
+        elif cmd == 'nd':
+            nextCmd = self.expect(Keyword)
+            if nextCmd == 'prefix':
+                nd_prefix = None
+                default_prefix = self.accept(Keyword)
+                if not default_prefix:
+                    nd_prefix = self.expect(Literal) + self.expect(Punctuation) + self.expect(Literal)
+                keyword = self.accept(Keyword)
+                if keyword is None or not 'no-ad' in keyword:
+                    if nd_prefix:
+                        ra_prefix.append(nd_prefix)
+            elif nextCmd == 'suppress-ra':
+                ra_suppress = True
+            self.skipTo(EndOfCommand)
+        
         elif cmd == 'scp':
             nextCmd = self.expect(Keyword)
             if nextCmd == 'server':
@@ -446,7 +479,7 @@ class TagsFormatter(Formatter):
 
         else:
             self.skipTo(EndOfCommand)
-
+        return (ra_suppress, ra_line, if_prefix, ra_prefix)
 
 def main():
     filename = taglib.default_filename

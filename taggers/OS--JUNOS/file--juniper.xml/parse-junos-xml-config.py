@@ -119,6 +119,7 @@ def tag_protocols(top):
     if protocol_elem_list:
         protocol_elem = protocol_elem_list[0]
         protocol_tag = taglib.tag("routing protocol", protocol)
+        protocol_tag.used(protocol_elem.sourceline)
         for group_elem in protocol_elem.xpath("group"):
             name_elem = group_elem.xpath("name")[0]
             group_tag = taglib.tag("%s group" % protocol,
@@ -165,6 +166,7 @@ def tag_protocols(top):
     if protocol_elem_list:
         protocol_elem = protocol_elem_list[0]
         protocol_tag = taglib.tag("routing protocol", protocol)
+        protocol_tag.used(protocol_elem.sourceline)
         for group_elem in protocol_elem.xpath("group"):
             name_elem = group_elem.xpath("name")[0]
             group_tag = taglib.tag("%s group" % protocol,
@@ -184,6 +186,7 @@ def tag_protocols(top):
             continue
         protocol_elem = protocol_elem_list[0]
         protocol_tag = taglib.tag("routing protocol", protocol)
+        protocol_tag.used(protocol_elem.sourceline)
         for area_elem in protocol_elem.xpath("area"):
             name_elem = area_elem.xpath("name")[0]
             area_tag = taglib.tag("%s area" % protocol, name_elem.text)
@@ -204,6 +207,7 @@ def tag_protocols(top):
     if protocol_elem_list:
         protocol_elem = protocol_elem_list[0]
         protocol_tag = taglib.tag("routing protocol", protocol)
+        protocol_tag.used(protocol_elem.sourceline)
         for interface_name_elem in protocol_elem.xpath("interface/name"):
             if interface_name_elem.text == "all":
                 interface_tags = all_interface_tags
@@ -221,6 +225,7 @@ def tag_protocols(top):
             continue
         protocol_elem = protocol_elem_list[0]
         protocol_tag = taglib.tag("routing protocol", protocol)
+        protocol_tag.used(protocol_elem.sourceline)
         for group_elem in protocol_elem.xpath("group"):
             name_elem = group_elem.xpath("name")[0]
             group_tag = taglib.tag("%s group" % protocol,name_elem.text)
@@ -236,7 +241,31 @@ def tag_protocols(top):
                 for t in interface_tags:
                     t.implies(group_tag, interface_name_elem.sourceline)
 
-
+    protocol = "router-advertisement"
+    protocol_elem_list = top.xpath("protocols/%s" % protocol.lower())
+    if protocol_elem_list:
+        protocol_elem = protocol_elem_list[0]
+        protocol_tag = taglib.tag("routing protocol", protocol)
+        protocol_tag.used(protocol_elem.sourceline)
+        for interface_elem in protocol_elem.xpath("interface"):
+            interface_name_elem = interface_elem.xpath("name")[0]
+            if interface_name_elem.text == "all":
+                interface_tags = all_interface_tags
+            else:
+                interface_tags = [
+                    taglib.tag("interface", 
+                               "%s %s" % (device_tag.name, 
+                                          interface_name_elem.text))]
+            for t in interface_tags:
+                t.implies(protocol_tag, interface_name_elem.sourceline)
+                ratag = taglib.tag("ra server", 
+                                    "%s %s" % (device_tag.name, interface_name_elem.text))
+                ratag.used(interface_name_elem.sourceline)
+                
+                for prefix_name_elem in interface_elem.xpath("prefix/name"):
+                    ratag.implies(taglib.ip_subnet_tag(prefix_name_elem.text),
+                                    prefix_name_elem.sourceline)
+                
 def tag_matches(top, path, kind, context):
     for e in top.xpath(path):
         t = taglib.tag(kind, e.text)

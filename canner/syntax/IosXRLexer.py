@@ -270,6 +270,7 @@ class IosXRLexer(RegexLexer):
             (r'name-server(?=\s)', Keyword, 'litAddress'),
             (r'nat(?=\s)', Keyword, 'slurp'),
             (r'nbar(?=\s)', Keyword, 'slurp'),
+            (r'nd(?=\s)', Keyword, 'ipv6-nd'),
             (r'nhrp(?=\s)', Keyword, 'slurp'),
             (r'ospf(?=\s)', Keyword, 'slurp'),
             (r'pgm(?=\s)', Keyword, 'slurp'),
@@ -371,6 +372,45 @@ class IosXRLexer(RegexLexer):
             (r'permanent(?=\s)', Keyword),
             (r'tag(?=\s)', Keyword, 'litInteger'),
             (r'track(?=\s)', Keyword, 'litInteger'),
+            ],
+            
+            # router advertisement is enabled by default on ipv6 multi-access interfaces
+            # including Ethernet and SRP
+        'ipv6-nd': [
+            (r'$', Text, '#pop'),
+            (r'\s', Text),
+            (r'dad(?=\s)', Keyword, 'slurp'),
+            (r'managed-config-flag(?=\s)', Keyword, 'slurp'),
+            (r'ns-interval(?=\s)', Keyword, 'slurp'),
+            (r'other-config-flag(?=\s)', Keyword, 'slurp'),
+            (r'prefix(?=\s)', Keyword, 'ipv6-nd-prefix'),
+            (r'ra-interval(?=\s)', Keyword, 'slurp'),
+            (r'ra-lifetime(?=\s)', Keyword, 'slurp'),
+            (r'reachable-time(?=\s)', Keyword, 'slurp'),
+            (r'redirects(?=\s)', Keyword, 'slurp'),
+            (r'scavenge-timeout(?=\s)', Keyword, 'slurp'),
+            (r'suppress-ra(?=\s)', Keyword, 'slurp'),
+            (r'\S+', Keyword.Pseudo, 'slurp'),
+            ],
+
+        'ipv6-nd-prefix': [
+            (r'$', Text, '#pop'),
+            (r'(\s+)(default)(?=\s)', bygroups(Text, Keyword), 'ipv6-nd-prefix-param'),
+            (r'\s+(?!default)', Text, ('ipv6-nd-prefix-param', 'litPrefixLen', 'litV6Address')),
+            ],
+
+        'ipv6-nd-prefix-param': [
+            (r'$', Text, '#pop'),
+            (r'\s', Text),
+            (r'at(?=\s)', Keyword, 'slurp'),
+            (r'infinite(?=\s)', Keyword, 'slurp'),
+            (r'no-advertise(?=\s)', Keyword, 'slurp'),
+            (r'no-adv(?=\s)', Keyword, 'slurp'),
+            (r'no-ad(?=\s)', Keyword, 'slurp'),
+            (r'no-autoconfig(?=\s)', Keyword, 'slurp'),
+            (r'off-link(?=\s)', Keyword, 'slurp'),
+            (r'valid-lifetime(?=\s)', Keyword, 'slurp'),
+            (r'\S+', Keyword.Pseudo, 'slurp'),
             ],
 
         'http': [

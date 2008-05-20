@@ -279,6 +279,7 @@ class IosLexer(RegexLexer):
             (r'multicast-routing(?=\s)', Keyword, 'slurp'),
             (r'name-server(?=\s)', Keyword, 'litAddress'),
             (r'nat(?=\s)', Keyword, 'slurp'),
+            (r'nd(?=\s)', Keyword, 'nd'),
             (r'nbar(?=\s)', Keyword, 'slurp'),
             (r'nhrp(?=\s)', Keyword, 'slurp'),
             (r'ospf(?=\s)', Keyword, 'slurp'),
@@ -650,6 +651,43 @@ class IosLexer(RegexLexer):
             (r'area(?=\s)', Keyword, 'ospfAreaLiteral'),
             ],
 
+        'nd': [
+            (r'$', Text, '#pop'),
+            (r'\s', Text),
+            (r'advertisement-interval(?=\s)', Keyword, 'slurp'),
+            (r'dad(?=\s)', Keyword, 'slurp'),
+            (r'managed-config-flag(?=\s)', Keyword, 'slurp'),
+            (r'ns-interval(?=\s)', Keyword, 'slurp'),
+            (r'other-config-flag(?=\s)', Keyword, 'slurp'),
+            (r'prefix-advertisement(?=\s)', Keyword, 'slurp'),
+            (r'prefix(?=\s)', Keyword, 'ipv6-nd-prefix'),
+            (r'ra-interval(?=\s)', Keyword, 'slurp'),
+            (r'ra-lifetime(?=\s)', Keyword, 'slurp'),
+            (r'ra(?=\s)', Keyword, 'slurp'),
+            (r'reachable-time(?=\s)', Keyword, 'slurp'),
+            (r'router-preference(?=\s)', Keyword, 'slurp'),
+            (r'suppress-ra(?=\s)', Keyword, 'slurp'),
+            ],
+            
+        'ipv6-nd-prefix': [
+            (r'$', Text, '#pop'),
+            (r'(\s+)(default)(?=\s)', bygroups(Text, Keyword), 'ipv6-nd-prefix-param'),
+            (r'\s+(?!default)', Text, ('ipv6-nd-prefix-param', 'litPrefixLen', 'litV6Address')),
+            ],
+
+        'ipv6-nd-prefix-param': [
+            (r'$', Text, '#pop'),
+            (r'\s', Text),
+            (r'at(?=\s)', Keyword, 'slurp'),
+            (r'infinite(?=\s)', Keyword, 'slurp'),
+            (r'no-advertise(?=\s)', Keyword, 'slurp'),
+            (r'no-autoconfig(?=\s)', Keyword, 'slurp'),
+            (r'no-rtr-address(?=\s)', Keyword, 'slurp'),
+            (r'off-link(?=\s)', Keyword, 'slurp'),
+            (r'\d+', Number.Integer),
+            (r'\S+', Keyword.Pseudo, 'slurp'),
+            ],
+           
         'snmp-server': [
             (r'$', Text, '#pop'),
             (r'\s', Text),
