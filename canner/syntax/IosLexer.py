@@ -229,7 +229,7 @@ class IosLexer(RegexLexer):
             (r'bgp-community(?=\s)', Keyword, 'slurp'),
             (r'bootp(?=\s)', Keyword, 'slurp'),
             (r'broadcast-address(?=\s)', Keyword, 'slurp'),
-            (r'cef(?=\s)', Keyword, 'slurp'),
+            (r'cef(?=\s)', Keyword, 'cef'),
             (r'cgmp(?=\s)', Keyword, 'slurp'),
             (r'classless(?=\s)', Keyword, 'slurp'),
             (r'community-list(?=\s)', Keyword, 'slurp'),
@@ -316,6 +316,7 @@ class IosLexer(RegexLexer):
             (r'tftp(?=\s)', Keyword, 'slurp'),
             (r'trigger-authentication(?=\s)', Keyword, 'slurp'),
             (r'udptn(?=\s)', Keyword, 'slurp'),
+            (r'unicast-routing(?=\s)', Keyword, 'slurp'),
             (r'unnumbered(?=\s)', Keyword, 'slurp'),
             (r'unreachables(?=\s)', Keyword, 'slurp'),
             (r'urd(?=\s)', Keyword, 'slurp'),
@@ -325,6 +326,12 @@ class IosLexer(RegexLexer):
             (r'\S+', Keyword.Pseudo, 'slurp'),
             ],
 
+        'cef': [
+            (r'$', Text, '#pop'),
+            (r'\s', Text),
+            (r'distributed(?=\s)', Keyword),
+            ],
+            
         'ip access-group options': [
             (r'\s', Text),
             include('litInteger'),

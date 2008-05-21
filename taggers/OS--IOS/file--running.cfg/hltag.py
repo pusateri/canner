@@ -37,6 +37,8 @@ ssidLineDict = {}
 ssidsForInterface = {}
 ipv6_general_prefixes = {}
 device_tag = taglib.env_tags.device
+ipv6_addresses = False
+ipv6_unicast_routing = None
 
 class UnexpectedToken(Exception):
     pass
@@ -168,7 +170,12 @@ class TagsFormatter(Formatter):
 
             except UnexpectedToken:
                 self.skipTo(EndOfCommand)
-
+                
+        if ipv6_addresses and ipv6_unicast_routing is None:
+            t = taglib.tag("forwarding disabled", "IPv6 unicast")
+            t.implied_by(device_tag, ipv6_unicast_routing)
+    
+    
     def dot11(self):
         subcmd = self.expect(Keyword)
         if subcmd == 'ssid':
@@ -394,12 +401,26 @@ class TagsFormatter(Formatter):
                     version_tag.implied_by(if_tag, self.lineNum)
                     
                     # add router advertisement by default on multi-access networks
-                    if version == 'IPv6' and re.search(r"eth|fddi|port-channel", if_tag.name, re.I):
-                        if_prefix.append(subnet_tag.name)
-                        ra_line = self.lineNum
+                    if version == 'IPv6':
+                        ipv6_addresses = True
+                        if re.search(r"eth|fddi|port-channel", if_tag.name, re.I):
+                            if_prefix.append(subnet_tag.name)
+                            ra_line = self.lineNum
                     
             self.skipTo(EndOfCommand)
 
+        elif cmd == 'cef':
+            if not version:
+                version = "IPv4"
+            distributed = self.accept(Keyword)
+            if distributed == "distributed":
+                cef = " ".join((version, distributed))
+            else:
+                cef = version
+            t = taglib.tag("Cisco express forwarding", cef)
+            t.implied_by(device_tag, self.lineNum)
+            self.expect(EndOfCommand)
+        
         elif cmd == 'domain name' or cmd == 'domain-name':
             t = taglib.tag("domain name", self.expect(String))
             t.implied_by(taglib.env_tags.device, self.lineNum)
@@ -477,6 +498,10 @@ class TagsFormatter(Formatter):
                     t.implied_by(taglib.env_tags.device, self.lineNum)
             self.skipTo(EndOfCommand)
 
+        elif cmd == 'unicast-routing':
+            ipv6_unicast_routing = self.lineNum
+            self.expect(EndOfCommand)
+            
         else:
             self.skipTo(EndOfCommand)
         return (ra_suppress, ra_line, if_prefix, ra_prefix)
@@ -489,7 +514,7 @@ def main():
     formatter = TagsFormatter(fn=filename)
 
     pygments.highlight(content, lexer, formatter, sys.stdout)
-    
+        
     taglib.output_tagging_log()
 
 
