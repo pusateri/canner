@@ -40,115 +40,115 @@ from .session import Session
 
 class Engine(object):
 
-    def __init__(self, taggersDir, session=None, timestamp=None):
-        self.taggersDir = taggersDir
+    def __init__(self, taggers_dir, session=None, timestamp=None):
+        self.taggers_dir = taggers_dir
         self.session = session
         self.timestamp = timestamp
 
         self.logger = logging.getLogger("Engine")
 
-        self.tagRefs = defaultdict(list)
-        self.pendingTagDirs = defaultdict(list)
-        self.pendingCommands = list()
+        self.tag_refs = defaultdict(list)
+        self.pending_tag_dirs = defaultdict(list)
+        self.pending_commands = list()
         self.taggers = defaultdict(list)
-        self.logFileNumber = 0;
+        self.log_file_number = 0
 
 
     def run(self):
-        self.makePackageStructure()
-        self.generateTags()
-        self.writeInfoPlist()
+        self.make_package_structure()
+        self.generate_tags()
+        self.write_info_plist()
 
 
 
-    def addTagDir(self, tag, dirname):
-        commandFile = os.path.join(dirname, "Command")
-        if os.path.isfile(commandFile):
-            self.addCommand(tag, commandFile)
-        if self.tagRefs[tag]:
-            self.loadTagDir(tag, dirname)
+    def add_tag_dir(self, tag, dirname):
+        command_file = os.path.join(dirname, "Command")
+        if os.path.isfile(command_file):
+            self.add_command(tag, command_file)
+        if self.tag_refs[tag]:
+            self.load_tag_dir(tag, dirname)
         else:
-            self.pendingTagDirs[tag].append((tag, dirname))
+            self.pending_tag_dirs[tag].append((tag, dirname))
             self.logger.debug("waiting to load tag dir '%s'" %
-                              self._stripTagDir(dirname))
+                              self._strip_tag_dir(dirname))
 
-    def addCommand(self, tag, sourceFilename):
+    def add_command(self, tag, source_filename):
         kind, _, name = tag.partition("--")
         assert kind == "file"
-        with open(sourceFilename) as f:
+        with open(source_filename) as f:
             command = f.read().rstrip("\n")
         self.logger.debug("waiting to issue command '%s' for tag '%s'" %
                           (command, tag))
-        self.pendingCommands.append((command, name))
+        self.pending_commands.append((command, name))
 
-    def addTagger(self, tag, tagger):
+    def add_tagger(self, tag, tagger):
         self.taggers[tag].append(tagger)
-        ranTagger = False
+        ran_tagger = False
         if "--" in tag:
-            if tag in self.tagRefs:
-                self.runTagger(tagger, tag)
-                ranTagger = True
+            if tag in self.tag_refs:
+                self.run_tagger(tagger, tag)
+                ran_tagger = True
         else:
-            for t in [t for t in self.tagRefs if t.startswith(tag + "--")]:
-                self.runTagger(tagger, t)
-                ranTagger = True
-        if not ranTagger:
+            for t in [t for t in self.tag_refs if t.startswith(tag + "--")]:
+                self.run_tagger(tagger, t)
+                ran_tagger = True
+        if not ran_tagger:
             self.logger.debug("waiting to run tagger '%s'" %
-                              self._stripTagDir(tagger))
+                              self._strip_tag_dir(tagger))
 
 
-    def addTagRef(self, tag, tagger="canner", filename=None, line=None,
+    def add_tag_ref(self, tag, tagger="canner", filename=None, line=None,
                   properties={}, **kw):
         filename = filename or ""
         line = int(line or 0)
-        tagRef = dict(tagger=tagger, filename=filename, line=line)
-        tagRef.update(properties)
-        tagRef.update(kw)
-        self.tagRefs[tag].append(tagRef)
+        tag_ref = dict(tagger=tagger, filename=filename, line=line)
+        tag_ref.update(properties)
+        tag_ref.update(kw)
+        self.tag_refs[tag].append(tag_ref)
         self.logger.debug("added tag '%s' from %s:%d" %
-                          (tag, tagRef["filename"], tagRef["line"]))
+                          (tag, tag_ref["filename"], tag_ref["line"]))
 
-        if len(self.tagRefs[tag]) == 1:
+        if len(self.tag_refs[tag]) == 1:
             # This is the first time we've seen the tag.  Run any waiting
             # taggers and load any pending directories.
-            wildcardTag = tag[0:tag.index("--")]
-            for t in tag, wildcardTag:
+            wildcard_tag = tag[0:tag.index("--")]
+            for t in tag, wildcard_tag:
                 for tagger in self.taggers[t]:
-                    self.runTagger(tagger, tag)
-                for pendingTag, path in self.pendingTagDirs[t]:
-                    self.loadTagDir(pendingTag, path)
-                    del self.pendingTagDirs[t]
+                    self.run_tagger(tagger, tag)
+                for pending_tag, path in self.pending_tag_dirs[t]:
+                    self.load_tag_dir(pending_tag, path)
+                    del self.pending_tag_dirs[t]
 
-    def addFile(self, filename, content=None):
+    def add_file(self, filename, content=None):
         if content is not None:
             with open(filename, "w") as f:
                 f.write(content)
 
-    def addFileTagRef(self, filename, content=None):
-        self.addFile(filename, content)
-        ctx = "snapshot--" + self.sessionInfo["id"]
-        self.addTagRef("file--" + filename, "canner", filename, context=ctx)
+    def add_file_tag_ref(self, filename, content=None):
+        self.add_file(filename, content)
+        ctx = "snapshot--" + self.session_info["id"]
+        self.add_tag_ref("file--" + filename, "canner", filename, context=ctx)
 
-    def _stripTagDir(self, path):
-        common = os.path.commonprefix([self.taggersDir + "/", path])
+    def _strip_tag_dir(self, path):
+        common = os.path.commonprefix([self.taggers_dir + "/", path])
         return path[len(common):]
 
 
 
-    def loadTagDir(self, tag, dir):
-        self.logger.debug("loading tag dir '%s'" %  self._stripTagDir(dir))
+    def load_tag_dir(self, tag, dir):
+        self.logger.debug("loading tag dir '%s'" %  self._strip_tag_dir(dir))
         for name in os.listdir(dir):
             if name.startswith('.') or name.endswith('~') or name == 'Command':
                 continue
             path = os.path.join(dir, name)
 
             if os.path.isdir(path):
-                self.addTagDir(name, path)
+                self.add_tag_dir(name, path)
             else:
-                self.addTagger(tag, path)
+                self.add_tagger(tag, path)
 
-    def runTagger(self, tagger, tag):
-        self.logger.info("running tagger '%s'" % self._stripTagDir(tagger))
+    def run_tagger(self, tagger, tag):
+        self.logger.info("running tagger '%s'" % self._strip_tag_dir(tagger))
 
         kind, _, name = tag.partition("--")
 
@@ -156,23 +156,23 @@ class Engine(object):
         env["TRIGGER_KIND"], env["TRIGGER_NAME"] = kind, name
         if kind == "file":
             env["TRIGGER_FILENAME"] = name
-        for k, v in self.sessionInfo.iteritems():
+        for k, v in self.session_info.iteritems():
             env["SESSION_%s" % re.sub(r'([A-Z])', r'_\1', k).upper()] = str(v)
 
         p = subprocess.Popen([tagger], env=env,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        tagData, errors = p.communicate();
+        tag_data, errors = p.communicate()
 
-        taggerName = "--".join(self._stripTagDir(tagger).split("/"))
-        logFilename = \
+        tagger_name = "--".join(self._strip_tag_dir(tagger).split("/"))
+        log_filename = \
             os.path.join("Contents", "Logs",
-                         "%03d--%s.log" % (self.logFileNumber, taggerName))
-        self.logFileNumber += 1;
+                         "%03d--%s.log" % (self.log_file_number, tagger_name))
+        self.log_file_number += 1
 
-        taggingLog = None
-        taggingError = None
+        tagging_log = None
+        tagging_error = None
         
-        with open(logFilename, "w") as f:
+        with open(log_filename, "w") as f:
             print >>f, "===", tagger
             print >>f
             print >>f, "=== Environment"
@@ -183,7 +183,7 @@ class Engine(object):
             print >>f
             print >>f, "=== Tag Data (stdout)"
             print >>f
-            f.write(tagData)
+            f.write(tag_data)
             if errors:
                 print >>f
                 print >>f
@@ -196,36 +196,37 @@ class Engine(object):
             if p.returncode == 0:
                 print >>f, "=== Process exited normally"
                 try:
-                    taggingLog = simplejson.loads(tagData)
+                    tagging_log = simplejson.loads(tag_data)
                 except ValueError, e:
-                    taggingError = ("error parsing output of tagger '%s':\n%s" %
-                                    (self._stripTagDir(tagger), e))
+                    tagging_error = (
+                            "error parsing output of tagger '%s':\n%s" %
+                            (self._strip_tag_dir(tagger), e))
                     print >>f
                     print >>f
                     print >>f, "=== Error parsing tag data"
                     print >>f
                     print >>f, str(e)
             else:
-                taggingError = ("error running tagger '%s':\n%s" %
-                                (self._stripTagDir(tagger), errors))
+                tagging_error = ("error running tagger '%s':\n%s" %
+                                (self._strip_tag_dir(tagger), errors))
                 print >>f, "=== Process failed: return code %d" % p.returncode
                                 
-        if taggingError:
-            self.logger.error(taggingError)
-            self.addFile(logFilename)
-            self.addTagRef("error--tagger failed", path=logFilename, 
-                           context="snapshot--" + self.sessionInfo["id"])
+        if tagging_error:
+            self.logger.error(tagging_error)
+            self.add_file(log_filename)
+            self.add_tag_ref("error--tagger failed", path=log_filename, 
+                           context="snapshot--" + self.session_info["id"])
             return
             
-        for entry in taggingLog:
+        for entry in tagging_log:
             tag = entry["tag"]
             if tag.startswith("file--"):
-                self.addFileTagRef(tag[6:])
+                self.add_file_tag_ref(tag[6:])
             else:
                 try:
-                    filename, _, lineNum = entry["location"].partition(":")
+                    filename, _, line_num = entry["location"].partition(":")
                 except KeyError:
-                    filename = lineNum = None
+                    filename = line_num = None
 
                 properties = dict()
                 if "sort_name" in entry:
@@ -234,13 +235,14 @@ class Engine(object):
                     properties["displayName"] = entry["display_name"]
                 if "implied_by" in entry:
                     properties["context"] = entry["implied_by"]
-                self.addTagRef(tag, taggerName, filename, lineNum, properties)
+                self.add_tag_ref(tag, tagger_name, filename, line_num, 
+                        properties)
 
                 if "implies" in entry:
-                    self.addTagRef(entry["implies"], taggerName, filename,
-                                   lineNum, context=tag)
+                    self.add_tag_ref(entry["implies"], tagger_name, filename,
+                                   line_num, context=tag)
 
-    def makePackageStructure(self):
+    def make_package_structure(self):
         dirs = (
             "Contents",
             "Contents/Logs",
@@ -252,8 +254,8 @@ class Engine(object):
             f.write("????????")
 
 
-    def activelyGenerateTags(self):
-        si = self.sessionInfo = dict(
+    def actively_generate_tags(self):
+        si = self.session_info = dict(
             id = base64.encodestring(uuid.uuid4().bytes)[:-3],
             timestamp = self.timestamp.strftime("%Y-%m-%dT%H:%M:%S"),
             device = self.session.device,
@@ -261,37 +263,37 @@ class Engine(object):
             osName = self.session.os_name,
             )
         s = "\n".join("%s=%s" % (k, si[k]) for k in sorted(si))
-        self.addFileTagRef("sessionInfo", s)
+        self.add_file_tag_ref("sessionInfo", s)
 
-        self.addFileTagRef("login.log", self.session.login_info)
+        self.add_file_tag_ref("login.log", self.session.login_info)
 
-        while self.pendingCommands:
-            command, filename = self.pendingCommands.pop()
+        while self.pending_commands:
+            command, filename = self.pending_commands.pop()
             assert not os.path.exists(filename)
             content = self.session.perform_command(command)
             if content:
-                self.addFileTagRef(filename, content)
+                self.add_file_tag_ref(filename, content)
 
-    def passivelyGenerateTags(self):
+    def passively_generate_tags(self):
         if not os.path.exists("sessionInfo"):
             raise error("sessionInfo file not found")
 
-        si = self.sessionInfo = {}
+        si = self.session_info = {}
         with open("sessionInfo") as f:
             for line in f:
                 k, _, v = line.partition("=")
                 si[k.strip()] = v.strip()
-        for name in self.interestingFiles():
-            self.addFileTagRef(name)
+        for name in self.interesting_files():
+            self.add_file_tag_ref(name)
 
-    def interestingFiles(self):
+    def interesting_files(self):
         for name in os.listdir("."):
             if name.startswith(".") or name.endswith("~") \
                     or name in ("Contents", "pexpect.log"):
                 continue
             yield name
 
-    def syntaxHighlightFile(self, filename, *syntaxes):
+    def syntax_highlight_file(self, filename, *syntaxes):
         with open(filename) as f:
                 content = f.read()
                 
@@ -322,26 +324,26 @@ class Engine(object):
         self.logger.info("syntax highlighting file '%s' as '%s'" % (
             filename, lexer.name))
 
-        outFilename = os.path.join("Contents", "Resources", filename + ".html")
-        outDir = os.path.dirname(outFilename)
-        if not os.path.isdir(outDir):
-            os.makedirs(outDir)
-        with open(outFilename, "w") as f:
+        out_filename = os.path.join("Contents", "Resources", filename + ".html")
+        out_dir = os.path.dirname(out_filename)
+        if not os.path.isdir(out_dir):
+            os.makedirs(out_dir)
+        with open(out_filename, "w") as f:
             result = pygments.highlight(content, lexer, formatter, f)
 
-    def syntaxHighlightFiles(self):
-        for filename in self.interestingFiles():
+    def syntax_highlight_files(self):
+        for filename in self.interesting_files():
             file_tag = "file--" + filename
-            if file_tag not in self.tagRefs:
+            if file_tag not in self.tag_refs:
                 self.logger.warning("creating missing file tag for '%s'",
                                     filename)
-                self.addFileTagRef(filename)
+                self.add_file_tag_ref(filename)
 
             ancestors = set()
             tocheck = set()
             tocheck.add(file_tag)
             while tocheck:
-                for tag_ref in self.tagRefs[tocheck.pop()]:
+                for tag_ref in self.tag_refs[tocheck.pop()]:
                     if "context" not in tag_ref: continue
                     context_tag = tag_ref["context"]
                     if context_tag not in ancestors \
@@ -353,42 +355,42 @@ class Engine(object):
             self.logger.debug("for file '%s' found syntaxes %r",
                     filename, syntaxes)
 
-            self.syntaxHighlightFile(filename, *syntaxes)
+            self.syntax_highlight_file(filename, *syntaxes)
 
 
-    def generateTags(self):
-        self.loadTagDir('internal--startup', self.taggersDir)
+    def generate_tags(self):
+        self.load_tag_dir('internal--startup', self.taggers_dir)
 
         if self.session:
-            self.activelyGenerateTags()
+            self.actively_generate_tags()
         else:
-            self.passivelyGenerateTags()
+            self.passively_generate_tags()
 
-        self.syntaxHighlightFiles()
+        self.syntax_highlight_files()
 
 
-    def getTagNamesByKind(self, kind):
-        matches = set(t for t in self.tagRefs if t.startswith(kind + "--"))
+    def get_tag_names_by_kind(self, kind):
+        matches = set(t for t in self.tag_refs if t.startswith(kind + "--"))
         return [tag.partition("--")[2] for tag in matches]
 
-    def getTagNameByKind(self, kind):
-        names = self.getTagNamesByKind(kind)
+    def get_tag_name_by_kind(self, kind):
+        names = self.get_tag_names_by_kind(kind)
         return names[0] if names else None
 
-    def writeInfoPlist(self):
-        unreferencedTags = [k for k, v in self.tagRefs.iteritems() if not v]
-        for tag in unreferencedTags:
-            del self.tagRefs[tag]
+    def write_info_plist(self):
+        unreferenced_tags = [k for k, v in self.tag_refs.iteritems() if not v]
+        for tag in unreferenced_tags:
+            del self.tag_refs[tag]
 
-        ts = datetime.datetime.strptime(self.sessionInfo["timestamp"],
+        ts = datetime.datetime.strptime(self.session_info["timestamp"],
                                        "%Y-%m-%dT%H:%M:%S")
-        user = self.getTagNameByKind("config user")
-        log = self.getTagNameByKind("config log")
+        user = self.get_tag_name_by_kind("config user")
+        log = self.get_tag_name_by_kind("config log")
 
         info = dict()
-        info["tags"] = self.tagRefs
-        info["device"] = self.sessionInfo["device"]
-        info["snapshotID"] = self.sessionInfo["id"]
+        info["tags"] = self.tag_refs
+        info["device"] = self.session_info["device"]
+        info["snapshotID"] = self.session_info["id"]
         info["timestamp"] = ts
         if user: info["user"] = user
         if log: info["log"] = log
@@ -396,6 +398,6 @@ class Engine(object):
         plist = os.path.join("Contents", "Info.plist")
         plistlib.writePlist(info, plist)
         
-        info["timestamp"] = self.sessionInfo["timestamp"]
+        info["timestamp"] = self.session_info["timestamp"]
         with open(os.path.join("Contents", "info.json"), "w") as f:
             simplejson.dump(info, f, sort_keys=True, indent=2)
