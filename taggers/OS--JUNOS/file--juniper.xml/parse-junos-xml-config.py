@@ -265,7 +265,13 @@ def tag_protocols(top):
                 for prefix_name_elem in interface_elem.xpath("prefix/name"):
                     ratag.implies(taglib.ip_subnet_tag(prefix_name_elem.text),
                                     prefix_name_elem.sourceline)
-                
+
+def tag_location(top):
+    for prop in top.xpath("system/location/*"):
+        t = taglib.tag("location %s" % prop.tag, prop.text)
+        t.used(prop.sourceline)
+        
+
 def tag_matches(top, path, kind, context):
     for e in top.xpath(path):
         t = taglib.tag(kind, e.text)
@@ -296,6 +302,7 @@ def main():
     tag_services(top)
     tag_interfaces(top)
     tag_protocols(top)
+    tag_location(top)
     
     taglib.output_tagging_log()
 
