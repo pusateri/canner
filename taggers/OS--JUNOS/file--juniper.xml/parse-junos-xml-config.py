@@ -272,7 +272,7 @@ def tag_location(top):
         t.used(prop.sourceline)
 
 def tag_scripts(top):
-    for script_type in ("commit", "op"):
+    for script_type in ("commit", "event", "op"):
         for cs in top.xpath("system/scripts/%s/file" % script_type):
             file_elem = cs.xpath("name")[0]
             t = taglib.tag("%s script" % script_type, "%s %s" % (device_tag.name,file_elem.text))
