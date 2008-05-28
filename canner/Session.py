@@ -212,7 +212,8 @@ class Session(object):
         self.personality = self.candidate_personalities[0]
 
         for candidate in self.candidate_personalities:
-            self.logger.debug("canidate: %3d%% %s" % (
-                100 * candidate.confidence, candidate.__class__.__name__))
+            if candidate.confidence:
+                self.logger.debug("candidate: %3d%% %s" % (
+                    100 * candidate.confidence, candidate.__class__.__name__))
 
 
