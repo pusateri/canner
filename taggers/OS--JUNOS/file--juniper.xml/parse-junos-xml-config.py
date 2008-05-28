@@ -270,7 +270,21 @@ def tag_location(top):
     for prop in top.xpath("system/location/*"):
         t = taglib.tag("location %s" % prop.tag, prop.text)
         t.used(prop.sourceline)
-        
+
+def tag_scripts(top):
+    for script_type in ("commit", "op"):
+        for cs in top.xpath("system/scripts/%s/file" % script_type):
+            file_elem = cs.xpath("name")[0]
+            t = taglib.tag("%s script" % script_type, "%s %s" % (device_tag.name,file_elem.text))
+            t.implies(device_tag, file_elem.sourceline)
+            tf = taglib.tag("%s script file" % script_type, file_elem.text)
+            tf.implied_by(t, file_elem.sourceline)
+            source_elems = cs.xpath("source")
+            if source_elems:
+                elem = source_elems[0]
+                src = taglib.tag("%s script source" % script_type, elem.text)
+                src.implied_by(t, elem.sourceline)
+                    
 
 def tag_matches(top, path, kind, context):
     for e in top.xpath(path):
@@ -303,6 +317,7 @@ def main():
     tag_interfaces(top)
     tag_protocols(top)
     tag_location(top)
+    tag_scripts(top)
     
     taglib.output_tagging_log()
 
