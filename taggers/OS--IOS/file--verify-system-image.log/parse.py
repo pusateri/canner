@@ -25,10 +25,11 @@ from canner import taglib
 # verify /md5 (flash:c2801-advsecurityk9-mz.124-10a.bin) = 3f61cf7ee066f423f0411689080dc22b
 
 data = open(taglib.default_filename).read()
-m = re.search(r"verify.*\(.*[:/]([^:/]+)\) = (\w+)", data)
+m = re.search(r"verify.*\(.*[:/]([^:/]+?)(?:\.bin)?\) = (\w+)", data)
 if m:
-    filename, hash = m.groups()
-    t = taglib.tag("system image hash","%s %s" % (filename, hash))
-    t.implied_by(taglib.env_tags.snapshot)
+    image, hash = m.groups()
+    t = taglib.tag("system image signature","%s %s" % (image, hash))
+    t.implied_by(taglib.env_tags.device)
+    t.implies(taglib.tag("system image", image))
 
 taglib.output_tagging_log()

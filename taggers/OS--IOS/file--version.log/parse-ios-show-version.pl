@@ -35,16 +35,16 @@ while (<>) {
         "implies": "OS--IOS"
     },
 EOF
-    /^System image file.*"(\w+:\/?(.*))"/ && print <<EOF;
+    /^System image file.*"(.*[:\/]([^:\/]+?)(?:\.bin)?)"/ && print <<EOF;
     {
         "location": "$ARGV:$.",
-        "tag": "system image path--$1",
+        "tag": "system image file--$1",
         "implied_by": "device--$ENV{SESSION_DEVICE}"
     },
     {
         "location": "$ARGV:$.",
-        "tag": "system image file--$2",
-        "implied_by": "system image path--$1"
+        "tag": "system image--$2",
+        "implied_by": "system image file--$1"
     }
 ]
 EOF
