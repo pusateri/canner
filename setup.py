@@ -50,6 +50,7 @@ setup(
                         "lxml >=1.3, <2a",
                         "IPy ==0.56",
                         "simplejson >=1.7",
+                        "Genshi >=0.4",
                         ],
 
     packages = ["canner",

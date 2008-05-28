@@ -33,6 +33,7 @@ import socket
 import uuid
 import base64
 import simplejson
+import genshi.template.text
 from . import error
 from . import plistlib
 from .session import Session
@@ -154,7 +155,7 @@ class TaggerTask(Task):
             self.engine.logger.error(tagging_error)
             self.engine.add_file(log_filename)
             self.engine.add_tagref("error--tagger failed", path=log_filename, 
-                    context="snapshot--" + self.session_info["id"])
+                    context="snapshot--" + self.engine.session_info["id"])
             return
             
         for entry in tagging_log:
@@ -196,7 +197,11 @@ class CLITask(Task):
         name = m.group(1)
 
         with open(self.source_path) as f:
-            command = f.read().rstrip("\n")
+            source = f.read().rstrip("\n")
+        template = genshi.template.text.TextTemplate(source)
+        vars = dict(trigger=trigger)
+        vars["trigger_kind"], _, vars["trigger_name"] = trigger.partition("--")
+        command = template.generate(**vars).render()
 
         content = self.engine.session.perform_command(command)
 
