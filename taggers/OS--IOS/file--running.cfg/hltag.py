@@ -210,6 +210,11 @@ class TagsFormatter(Formatter):
             self.skipTo(EndOfCommand)  
         
     def interface(self):
+        ra_suppress = False
+        ra_line = None
+        ra_prefix = []
+        if_prefix = []
+        
         name = self.expect(Name)
    
         if_tag = taglib.tag("interface", 
@@ -262,15 +267,14 @@ class TagsFormatter(Formatter):
                 elif cmd == "ipv6":
                     ra = self.ip(if_tag=if_tag, version="IPv6")
                     # (ra_suppress, ra_line, if_prefix, ra_prefix)
-                    if not ra[0] and ra[1]:
-                        ratag = taglib.tag("ra server", if_tag.name)
-                        if len(ra[3]):
-                            for p in ra[3]:
-                                ratag.implies(taglib.ip_subnet_tag(p), ra[1])
-                        else:
-                            for p in ra[2]:
-                                ratag.implies(taglib.ip_subnet_tag(p), ra[1])
-                    
+                    ra_suppress |= ra[0]
+                    if ra[1]:
+                        ra_line = ra[1]
+                    if len(ra[2]):
+                        if_prefix = ra[2]
+                    if len(ra[3]):
+                        ra_prefix = ra[3]
+                                        
                 elif cmd == "ssid":
                     if m and not m.group(2):
                         ssidsForInterface[m.group(1)].append(self.expect(Literal))
@@ -282,6 +286,15 @@ class TagsFormatter(Formatter):
             except UnexpectedToken:
                 self.skipTo(EndOfCommand)
 
+        if (not ra_supress) and ra_line:
+            ratag = taglib.tag("ra server", if_tag.name)
+            if len(ra_prefix):
+                for p in ra_prefix:
+                    ratag.implies(taglib.ip_subnet_tag(p), ra_line)
+            else:
+                for p in if_prefix:
+                    ratag.implies(taglib.ip_subnet_tag(p), ra_line)
+        
     def radius(self):
         cmd = self.expect(Keyword)
 
