@@ -242,6 +242,15 @@ class TagsFormatter(Formatter):
         while True:
             
             if self.accept(Whitespace) is None:
+                if (not ra_suppress) and ra_line:
+                    ratag = taglib.tag("ra server", if_tag.name)
+                    if len(ra_prefix):
+                        for p in ra_prefix:
+                            ratag.implies(taglib.ip_subnet_tag(p), ra_line)
+                    else:
+                        for p in if_prefix:
+                            ratag.implies(taglib.ip_subnet_tag(p), ra_line)
+                
                 return
 
             if self.accept(Comment) is not None:
@@ -285,16 +294,8 @@ class TagsFormatter(Formatter):
 
             except UnexpectedToken:
                 self.skipTo(EndOfCommand)
-
-        if (not ra_supress) and ra_line:
-            ratag = taglib.tag("ra server", if_tag.name)
-            if len(ra_prefix):
-                for p in ra_prefix:
-                    ratag.implies(taglib.ip_subnet_tag(p), ra_line)
-            else:
-                for p in if_prefix:
-                    ratag.implies(taglib.ip_subnet_tag(p), ra_line)
         
+    
     def radius(self):
         cmd = self.expect(Keyword)
 

@@ -1,1 +1,1 @@
-show startup-config
+show startup-config | exclude ntp clock-period

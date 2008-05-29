@@ -23,9 +23,9 @@ import sys, os, re
 from canner import taglib
 
 data = open(taglib.default_filename).read(1024).strip('\n')
-m = re.search(r'NVRAM config last updated at .*? by (.*)$', data, re.MULTILINE)
+m = re.search(r'Last configuration change at .*? by (.*)$', data, re.MULTILINE)
 if m:
-    num = data[0:m.start(0)].count('\n')
+    num = data[0:m.start(0)].count('\n') + 1
     t = taglib.tag("config user", m.group(1))
     t.implied_by(taglib.env_tags.snapshot, num)
     
