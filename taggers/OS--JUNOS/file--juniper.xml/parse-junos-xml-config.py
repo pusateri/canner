@@ -257,14 +257,14 @@ def tag_protocols(top):
                                "%s %s" % (device_tag.name, 
                                           interface_name_elem.text))]
             for t in interface_tags:
-                t.implies(protocol_tag, interface_name_elem.sourceline)
-                ratag = taglib.tag("ra server", 
+                ratag = taglib.tag("ND router advertisement server", 
                                     "%s %s" % (device_tag.name, interface_name_elem.text))
-                ratag.used(interface_name_elem.sourceline)
+                ratag.implied_by(t, interface_name_elem.sourceline);
                 
                 for prefix_name_elem in interface_elem.xpath("prefix/name"):
                     ratag.implies(taglib.ip_subnet_tag(prefix_name_elem.text),
                                     prefix_name_elem.sourceline)
+                    
 
 def tag_location(top):
     for prop in top.xpath("system/location/*"):

@@ -246,18 +246,25 @@ class TagsFormatter(Formatter):
                 if_prefix = []
                 # (ra_suppress, ra_line, if_prefix, ra_prefix)
                 for ra in ra_list:
+                    ra_suppress |= ra[0]
                     if ra[0]:
-                        admin = taglib.tag("admin disabled", "router advertisement server")
+                        admin = taglib.tag("admin disabled", "ND router advertisement server")
                         admin.implied_by(if_tag, ra[1])
                     if len(ra[2]):
                         if_prefix = ra[2]
                         ra_if_prefix_line = ra[1]
                     if len(ra[3]):
-                        ra_prefix = ra[3]
+                        ra_prefix = intra[3]
                         ra_prefix_line = ra[1]
                 
                 if ra_prefix_line or ra_if_prefix_line:
-                    ratag = taglib.tag("router advertisement server", if_tag.name)
+                    if not ra_suppress:
+                        rp = taglib.tag("routing protocol", "router advertisement")
+                        if ra_if_prefix_line:
+                            rp.used(ra_if_prefix_line)
+                        elif ra_prefix_line:
+                            rp.used(ra_prefix_line)
+                    ratag = taglib.tag("ND router advertisement server", if_tag.name)
                     if len(ra_prefix):
                         for p in ra_prefix:
                             ratag.implies(taglib.ip_subnet_tag(p), ra_prefix_line)
