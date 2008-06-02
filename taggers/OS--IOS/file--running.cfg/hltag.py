@@ -247,7 +247,7 @@ class TagsFormatter(Formatter):
                 # (ra_suppress, ra_line, if_prefix, ra_prefix)
                 for ra in ra_list:
                     if ra[0]:
-                        admin = taglib.tag("admin disabled", "ra server")
+                        admin = taglib.tag("admin disabled", "router advertisement server")
                         admin.implied_by(if_tag, ra[1])
                     if len(ra[2]):
                         if_prefix = ra[2]
@@ -257,7 +257,7 @@ class TagsFormatter(Formatter):
                         ra_prefix_line = ra[1]
                 
                 if ra_prefix_line or ra_if_prefix_line:
-                    ratag = taglib.tag("ra server", if_tag.name)
+                    ratag = taglib.tag("router advertisement server", if_tag.name)
                     if len(ra_prefix):
                         for p in ra_prefix:
                             ratag.implies(taglib.ip_subnet_tag(p), ra_prefix_line)
