@@ -198,7 +198,7 @@ class TagsFormatter(Formatter):
                         ssidDict[vlan_id] = ssid
                         ssidLineDict[vlan_id] = self.lineNum
                         t = taglib.tag("VLAN ID", vlan_id, sort_name="%05d" % int(vlan_id))
-                        t.used()
+                        t.used(self.lineNum)
                         self.expect(EndOfCommand)
                         
                     else:
@@ -210,13 +210,10 @@ class TagsFormatter(Formatter):
             self.skipTo(EndOfCommand)  
         
     def interface(self):
-        ra_suppress = False
-        ra_line = None
-        ra_prefix = []
-        if_prefix = []
-        
+        ra_list = []        
         name = self.expect(Name)
    
+        # TODO: make interface names sort in ascending numeric order
         if_tag = taglib.tag("interface", 
                             "%s %s" % (taglib.env_tags.device.name, name))
         if_tag.implied_by(taglib.env_tags.snapshot, self.lineNum)
@@ -242,15 +239,31 @@ class TagsFormatter(Formatter):
         while True:
             
             if self.accept(Whitespace) is None:
-                if (not ra_suppress) and ra_line:
+                ra_suppress = False
+                ra_prefix_line = None
+                ra_if_prefix_line = None
+                ra_prefix = []
+                if_prefix = []
+                # (ra_suppress, ra_line, if_prefix, ra_prefix)
+                for ra in ra_list:
+                    if ra[0]:
+                        admin = taglib.tag("admin disabled", "ra server")
+                        admin.implied_by(if_tag, ra[1])
+                    if len(ra[2]):
+                        if_prefix = ra[2]
+                        ra_if_prefix_line = ra[1]
+                    if len(ra[3]):
+                        ra_prefix = ra[3]
+                        ra_prefix_line = ra[1]
+                
+                if ra_prefix_line or ra_if_prefix_line:
                     ratag = taglib.tag("ra server", if_tag.name)
                     if len(ra_prefix):
                         for p in ra_prefix:
-                            ratag.implies(taglib.ip_subnet_tag(p), ra_line)
+                            ratag.implies(taglib.ip_subnet_tag(p), ra_prefix_line)
                     else:
                         for p in if_prefix:
-                            ratag.implies(taglib.ip_subnet_tag(p), ra_line)
-                
+                            ratag.implies(taglib.ip_subnet_tag(p), ra_if_prefix_line)
                 return
 
             if self.accept(Comment) is not None:
@@ -274,15 +287,7 @@ class TagsFormatter(Formatter):
                     self.ip(if_tag=if_tag, version="IPv4")
 
                 elif cmd == "ipv6":
-                    ra = self.ip(if_tag=if_tag, version="IPv6")
-                    # (ra_suppress, ra_line, if_prefix, ra_prefix)
-                    ra_suppress |= ra[0]
-                    if ra[1]:
-                        ra_line = ra[1]
-                    if len(ra[2]):
-                        if_prefix = ra[2]
-                    if len(ra[3]):
-                        ra_prefix = ra[3]
+                    ra_list.append(self.ip(if_tag=if_tag, version="IPv6"))
                                         
                 elif cmd == "ssid":
                     if m and not m.group(2):
@@ -471,6 +476,7 @@ class TagsFormatter(Formatter):
         elif cmd == 'nd':
             nextCmd = self.expect(Keyword)
             if nextCmd == 'prefix':
+                ra_line = self.lineNum
                 nd_prefix = None
                 default_prefix = self.accept(Keyword)
                 if not default_prefix:
@@ -480,6 +486,7 @@ class TagsFormatter(Formatter):
                     if nd_prefix:
                         ra_prefix.append(nd_prefix)
             elif nextCmd == 'suppress-ra':
+                ra_line = self.lineNum
                 ra_suppress = True
             self.skipTo(EndOfCommand)
         
