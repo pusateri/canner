@@ -34,6 +34,7 @@ import uuid
 import base64
 import simplejson
 import genshi.template.text
+import urllib
 from . import error
 from . import plistlib
 from .session import Session
@@ -57,10 +58,16 @@ class DirectoryTask(Task):
     def __init__(self, engine, trigger_spec, dir):
         super(DirectoryTask, self).__init__(engine, trigger_spec)
         self.dir = dir
+        self.already_run = False
 
     def run(self, trigger):
+        if self.already_run:
+            return
+        self.already_run = True
+
         self.engine.logger.debug("loading tag dir '%s'" %  
                 self.engine.strip_tag_dir(self.dir))
+
         for name in os.listdir(self.dir):
             path = os.path.join(self.dir, name)
             task = None
@@ -192,15 +199,20 @@ class CLITask(Task):
         if not self.engine.session:
             return
 
+        trigger_kind, _, trigger_name = trigger.partition("--")
+
         m = re.search(r"/file--([^/]+)\.cli$", self.source_path)
         assert m, "malformed cli command filename"
         name = m.group(1)
+        name = name.replace("__TRIGGER_NAME__", urllib.quote_plus(trigger_name))
 
         with open(self.source_path) as f:
             source = f.read().rstrip("\n")
         template = genshi.template.text.TextTemplate(source)
-        vars = dict(trigger=trigger)
-        vars["trigger_kind"], _, vars["trigger_name"] = trigger.partition("--")
+        vars = dict(re=re,
+                trigger=trigger, 
+                trigger_kind=trigger_kind, 
+                trigger_name=trigger_name)
         command = template.generate(**vars).render()
 
         content = self.engine.session.perform_command(command)
