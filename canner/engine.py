@@ -75,7 +75,8 @@ class DirectoryTask(Task):
             if name.startswith('.') or name.endswith('~'):
                 pass
             elif os.path.isdir(path):
-                spec = re.escape(name) + ("$" if "--" in name else "--")
+                spec = re.sub(r"\\_\\_ANY\\_\\_", r".*?",
+                        re.escape(name) + ("$" if "--" in name else "--"))
                 task = DirectoryTask(self.engine, spec, path)
             elif name.endswith(".cli"):
                 task = CLITask(self.engine, self.trigger_spec, path)
