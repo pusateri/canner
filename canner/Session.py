@@ -195,8 +195,11 @@ class Session(object):
             user=self.user,
             host=self.host,
             )
+        env = dict(os.environ)
+        env["TERM"] = "dumb"
+
         self.logger.debug("spawning '%s'", command)
-        self.connection = pexpect.spawn(command, 
+        self.connection = pexpect.spawn(command, env=env,
                                    logfile=self.logfile, 
                                    timeout=self.timeout)
         self.connection.delaybeforesend = 0.5

@@ -58,7 +58,7 @@ class BootstrapPersonality(Personality):
                 r"(?i)connection closed by remote host",
                 r"(?i)connection refused",
                 r"(?i)Operation timed out",
-                r"(?im)^\r?.{1,40}?[%#>] ?\Z",
+                r"(?i)[\r\n]+.{1,40}?[%#>$] ?\Z",
                 ]
             index = session.connection.expect(patterns, timeout=timeout)
             capturebuf += session.connection.before

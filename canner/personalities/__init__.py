@@ -22,6 +22,7 @@ import operator
 import pexpect
 import pkg_resources
 import re
+from .. import error
 
 class Personality(object):
 
