@@ -27,6 +27,6 @@ class LinuxPersonality(Personality):
 
     def examine_evidence(self, command, output):
         if command == "__login__":
-            self.examine_with_pattern(output, 0.6, r"Last login:.* from ")
+            self.examine_with_pattern(output, 0.2, r"Last login:.* from ")
         if command == "uname":
             self.examine_with_pattern(output, 0.9, r"Linux")

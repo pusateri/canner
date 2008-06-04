@@ -31,6 +31,9 @@ class ExtremeWarePersonality(Personality):
     commands_to_probe = ("show version", )
 
     def examine_evidence(self, command, output):
+        if command == "__login__":
+            self.examine_with_pattern(output, 0.2, 
+                          r"Don't forget to save your configuration changes")
         if command == "show version":
             self.examine_with_pattern(output, 0.8, r"(?i)Image.*ExtremeWare")
 
