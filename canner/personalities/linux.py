@@ -20,14 +20,13 @@
 from . import Personality
 import re
 
-class OpenBSDPersonality(Personality):
+class LinuxPersonality(Personality):
 
-    os_name = "OpenBSD"
+    os_name = "Linux"
     commands_to_probe = ("uname", )
 
     def examine_evidence(self, command, output):
         if command == "__login__":
-            self.examine_with_pattern(output, 0.6, r"OpenBSD")
             self.examine_with_pattern(output, 0.6, r"Last login:.* from ")
         if command == "uname":
-            self.examine_with_pattern(output, 0.9, r"OpenBSD")
+            self.examine_with_pattern(output, 0.9, r"Linux")
