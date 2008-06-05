@@ -20,9 +20,9 @@
 from . import Personality
 import re
 
-class FreeBSDPersonality(Personality):
+class POSIXPersonality(Personality):
 
-    os_name = "FreeBSD"
+    os_name = "POSIX"
     commands_to_probe = ("uname", )
 
     failed_command_patterns = (
@@ -31,7 +31,12 @@ class FreeBSDPersonality(Personality):
         
     def examine_evidence(self, command, output):
         if command == "__login__":
-            self.examine_with_pattern(output, 0.4, r"FreeBSD")
+            self.examine_with_pattern(output, 0.4, r"\w+BSD|Linux")
             self.examine_with_pattern(output, 0.2, r"Last login:.* from ")
         if command == "uname":
-            self.examine_with_pattern(output, 0.9, r"FreeBSD")
+            self.examine_with_pattern(output, 0.9, r"\w+BSD|Linux")
+
+    def setup(self, session):
+        self.os_name = session.perform_command("uname").strip()
+        session.prompt = r"(?m)^\r?\$ \Z"
+        session.perform_command("exec env PS1='$ ' ENV= /bin/sh")
