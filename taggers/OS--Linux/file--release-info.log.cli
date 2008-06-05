@@ -1,0 +1,1 @@
+find /etc/*-release -maxdepth 0 -type f -exec cat {} \;
