@@ -32,9 +32,10 @@ class HPProCurvePersonality(Personality):
 
     def examine_evidence(self, command, output):
         if command == "__login__":
-            self.examine_with_pattern(output, 0.8, r"HP.* ProCurve ")
+            self.examine_with_pattern(output, 0.8, r"ProCurve ")
 
     def setup_session(self, session):
+        session.issue_command("page")
         session.issue_command("terminal length 1000")
         session.issue_command("terminal width 1920")
 
