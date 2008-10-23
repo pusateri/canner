@@ -21,7 +21,7 @@
 
 cat <<EOF
 [{
-    "tag": "snapshot fingerprint--$(cat primary.cfg primary-detail.cfg | openssl sha1)",
+    "tag": "snapshot fingerprint--$(grep -hv '#.*Configuration generated' primary.cfg primary-detail.cfg | openssl sha1)",
     "implied_by": "snapshot--$SESSION_ID"
 }]
 EOF
