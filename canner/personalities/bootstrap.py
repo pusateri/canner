@@ -52,7 +52,7 @@ class BootstrapPersonality(Personality):
                 r"(?i)are you sure you want to continue connecting",
                 r"(?im)^\r?(user name|username|user|login): ?",
                 r"(?i)(Enter password.*?:|password: ?)",
-                r"\r?Press any key to continue",
+                r"\r?(Press any key to continue|Press RETURN to get started)",
                 r"(?i)(host|node)name nor servname provided, or not known",
                 r"(?i)permission denied",
                 r"(?i)connection closed by remote host",
@@ -87,8 +87,8 @@ class BootstrapPersonality(Personality):
                 session.connection.sendline(session.password)
                 sent_password = True
 
-            elif index == 4: # space required to continue
-                session.connection.send(" ")
+            elif index == 4: # key required to continue
+                session.connection.send("\r")
 
             elif index == 5:
                 raise error("Unknown host")
