@@ -64,6 +64,10 @@ class BootstrapPersonality(Personality):
             capturebuf += session.connection.before
             if session.connection.after != pexpect.TIMEOUT:
                 capturebuf += session.connection.after
+            else:
+                # Clear out the buffer so we don't see the data
+                # (hopefully the prompt) later.
+                session.connection.buffer = ""
             timeout = session.timeout
 
             if index == 0: # timed out, hopefully we're at a prompt

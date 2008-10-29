@@ -68,7 +68,10 @@ class Personality(object):
 
     def determine_prompt(self, session):
         text = session.perform_command("__login__")
-        last = text[text.rindex("\n")+1:]
+        try:
+            last = text[text.rindex("\n")+1:]
+        except ValueError:
+            last = text
 
         prompt = r"(?m)^\r?" + re.escape(last)
         prompt = re.sub(r"\d+", r"\d+", prompt)
