@@ -25,9 +25,11 @@ import os
 import signal
 import sys
 import logging
+import shlex
 import shutil
 import datetime
 import traceback
+import subprocess
 from optparse import OptionParser
 
 from . import error
@@ -95,6 +97,11 @@ def add_options(parser):
     parser.add_option('-e', '--exec-password', dest='exec_password', 
                       help='exec PASSWORD')
     parser.add_option("-T", "--timeout", dest="timeout", type="int")
+
+    # interfacing with other programs
+
+    parser.add_option('--on-success', dest='on_success',
+                      help='command to run if canning is successful')
 
 
 def process_options(parser, options, args):
@@ -170,6 +177,10 @@ def process_options(parser, options, args):
         if options.snapshots_dir:
             parser.error('snapshots dir invalid when not in organize mode')
     
+    if options.on_success:
+        if options.interact:
+            parser.error("on-success cannot be used with interact")
+
     return options, args
 
 
@@ -202,6 +213,17 @@ def create_session(device, options):
     return session
 
 
+def run_hook(command, pkgdir):
+    args = shlex.split(command)
+    if '{}' in command:
+        for idx, arg in enumerate(args):
+            args[idx] = arg.replace('{}', pkgdir)
+    logging.debug('running hook: %r' % args)
+    retcode = subprocess.call(args)
+    if retcode != 0:
+        logging.error('failed to run hook: %d: %r' % (retcode, args))
+
+
 def interact(options, device):
     session = create_session(device, options)
     session.start(login_only=True)
@@ -214,19 +236,25 @@ def retag(options, pkg):
     pkgdir = os.path.join(starting_dir, pkg)
     if not os.path.isdir(pkgdir):
         raise error("snapshot directory '%s' not found" % pkgdir)
-    os.chdir(os.path.join(starting_dir, pkg))
+
+    os.chdir(pkgdir)
     if os.path.exists("Contents"):
         shutil.rmtree("Contents")
 
     start_debug_logging()
-    logging.info("snapshot: %s", os.getcwd())
+    logging.info("snapshot: %s", pkgdir)
 
     engine = Engine(options.taggers_dir)
     engine.run()
-    
+
+    if options.on_success:
+        os.chdir(starting_dir)
+        run_hook(options.on_success, pkgdir)
+
 
 def can(options, device):
-    snapshots_dir = options.snapshots_dir or os.getcwd()
+    starting_dir = os.getcwd()
+    snapshots_dir = options.snapshots_dir or starting_dir
     os.chdir(snapshots_dir)
 
     timestamp = datetime.datetime.utcnow()
@@ -250,9 +278,10 @@ def can(options, device):
         shutil.rmtree(pkg)
     os.mkdir(pkg)
     os.chdir(pkg)
+    pkgdir = os.getcwd()
 
     start_debug_logging()
-    logging.info("snapshot: %s", os.getcwd())
+    logging.info("snapshot: %s", pkgdir)
 
     session = create_session(device, options)
     try:
@@ -269,6 +298,9 @@ def can(options, device):
         raise exc_info[0], exc_info[1], exc_info[2]
     else:
         session.close()
+        if options.on_success:
+            os.chdir(starting_dir)
+            run_hook(options.on_success, pkgdir)
 
         
 def log_exception():
@@ -311,18 +343,18 @@ def main():
     signal.signal(signal.SIGTERM, force_quit)
     
     try:
-        usage = 'usage: %prog [options] device...'
+        usage = 'usage: %prog [options] device'
         parser = OptionParser(usage)
         add_options(parser)
         options, args = parser.parse_args()
         process_options(parser, options, args)
 
         if options.interact:
-            return interact(options, args[0])
+            interact(options, args[0])
         elif options.retag:
-            return retag(options, args[0])
+            retag(options, args[0])
         else:
-            return can(options, args[0])
+            can(options, args[0])
 
     except SystemExit:
         pass
