@@ -58,6 +58,7 @@ class BootstrapPersonality(Personality):
                 r"(?i)connection closed by remote host",
                 r"(?i)connection refused",
                 r"(?i)Operation timed out",
+                r"(?i)Host key verification failed",
                 r"(?i)[\r\n]+.{1,40}?[%#>$] ?\Z",
                 ]
             index = session.connection.expect(patterns, timeout=timeout)
@@ -104,8 +105,10 @@ class BootstrapPersonality(Personality):
                 raise error("Connection refused")
             elif index == 9:
                 raise error("Connection timed out")
+            elif index == 10:
+                raise error("SSH host key verification failed")
 
-            elif index == 10: # hopefully a prompt
+            elif index == 11: # hopefully a prompt
                 break
 
         return capturebuf
