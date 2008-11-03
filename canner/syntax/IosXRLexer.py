@@ -52,11 +52,9 @@ class IosXRLexer(RegexLexer):
             (r'controller(?=\s)', Keyword, ('controller', 'litInterfaceName')),
             (r'control-plane(?=\s)', Keyword, 'control-plane'),
             (r'domain(?=\s)', Keyword, 'domain'),
-            (r'flow(?=\s)', Keyword, 'flow'),
             (r'hostname(?=\s)', Keyword, 'litString'),
             (r'hw-module(?=\s)', Keyword, 'slurp'),
             (r'interface(?=\s)', Keyword, ('interface', 'litInterfaceName')),
-            (r'ipv4(?=\s)', Keyword, 'ipv4'),
             (r'line(?=\s)', Keyword, ('line', 'litString')),
             (r'logging(?=\s)', Keyword, 'logging'),
             (r'multicast-routing(?=\s)', Keyword, 'slurp'),
@@ -66,8 +64,6 @@ class IosXRLexer(RegexLexer):
             (r'route-policy(?=\s)', Keyword, 'slurp'),
             (r'snmp-server(?=\s)', Keyword, 'snmp-server'),
             (r'ssh(?=\s)', Keyword, 'ssh'),
-            (r'tacacs-server(?=\s)', Keyword, 'slurp'),
-            (r'tacacs(?=\s)', Keyword, 'slurp'),
             (r'tcp(?=\s)', Keyword, 'slurp'),
             (r'telnet(?=\s)', Keyword, 'slurp'),
             (r'template(?=\s)', Keyword, ('template', 'slurp')),
@@ -141,36 +137,7 @@ class IosXRLexer(RegexLexer):
             (r'name-server(?=\s)', Keyword, 'litAddress'),
             (r'name(?=\s)', Keyword, 'litBareWord'),
             ],
-             
-        'flow': [
-            (r'^\s+', Whitespace),
-            (r'\s', Text),
-            (r'^(?=\S)', Text, '#pop'),
-            (r'!.*', Comment),
-            (r'exporter-map(?=\s)', Keyword, ('flow exporter', 'litString')),
-            (r'monitor-map(?=\s)', Keyword, ('flow monitor', 'litString')),
-            ],
-
-        'flow exporter': [
-            (r'^(?=\S)', Text, '#pop'),
-            (r'^\s+', Whitespace),
-            (r'\s', Text),
-            (r'!.*', Comment),
-            (r'destination(?=\s)', Keyword, 'slurp'),
-            (r'source(?=\s)', Keyword, 'slurp'),
-            (r'transport(?=\s)', Keyword, 'slurp'),
-            (r'version(?=\s)', Keyword, 'slurp'),
-            ],
-
-        'flow monitor': [
-            (r'^(?=\S)', Text, '#pop'),
-            (r'^\s+', Whitespace),
-            (r'\s', Text),
-            (r'!.*', Comment),
-            (r'exporter(?=\s)', Keyword, 'slurp'),
-            (r'record(?=\s)', Keyword, 'slurp'),
-            ],
-             
+              
         'interface': [
             (r'^\s+', Whitespace),
             (r'\s', Text),
@@ -230,22 +197,6 @@ class IosXRLexer(RegexLexer):
             (r'udld(?=\s)', Keyword, 'slurp'),
             (r'vrf(?=\s)', Keyword, 'litString'),
             (r'world-mode(?=\s)', Keyword, 'slurp'),
-            ],
-
-        'ipv4': [
-            (r'^\s+', Whitespace),
-            (r'\s', Text),
-            (r'^(?=\S)', Text, '#pop'),
-            (r'!.*', Comment),
-            (r'access-list(?=\s)', Keyword, ('ipv4 acl', 'litString')),
-            ],
-
-        'ipv4 acl': [
-            (r'^(?=\S)', Text, '#pop'),
-            (r'^\s+', Whitespace),
-            (r'\s', Text),
-            (r'!.*', Comment),
-            (r'\d+', Number.Integer, 'slurp'),
             ],
 
             # here we combine ip and ipv6 at both the top level and interface level
