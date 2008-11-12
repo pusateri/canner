@@ -325,8 +325,9 @@ class TagsFormatter(Formatter):
         if protocol == "bgp":
             local_as = self.expect(Literal)
             local_as_tag = taglib.as_number_tag(local_as, "local AS")
-            local_as_tag.implies(taglib.as_number_tag(local_as), self.lineNum)
-
+            local_as_lineNum = self.lineNum
+            local_as_tag.implies(taglib.as_number_tag(local_as), local_as_lineNum)
+            
             self.skipTo(EndOfCommand)
             while True:
             
@@ -349,24 +350,32 @@ class TagsFormatter(Formatter):
 
                     elif cmd == "neighbor":
                         peer = self.expect(Literal)
-                        peer_tag = taglib.ip_address_tag(peer, kind="%s peer" % protocol.upper())
-                        peering_tag = taglib.tag("%s peering" % protocol.upper(),
-                                                 "%s %s" % (device_tag.name, peer),
-                                                 sort_name="%s %s" % (device_tag.name, peer_tag.sort_name))
-                        peering_tag.implies(protocol_tag, self.lineNum)
-                        peering_tag.implied_by(device_tag, self.lineNum)
-                        local_as_tag.implied_by(peering_tag, self.lineNum)
-                        
-                        address_tag = taglib.ip_address_tag(peer)
-                        peer_tag.implies(address_tag, self.lineNum)
-                        peer_tag.implied_by(peering_tag, self.lineNum)
                         
                         subcmd = self.expect(Keyword)
                         if subcmd == "remote-as":
+                            peer_tag = taglib.ip_address_tag(peer, kind="%s peer" % protocol.upper())
+                            peer_lineNum = self.lineNum
+                            address_tag = taglib.ip_address_tag(peer)
+                            peer_tag.implies(address_tag, peer_lineNum)
+
                             peer_as = self.expect(Literal)
+                            peer_as_lineNum = self.lineNum
                             peer_as_tag = taglib.as_number_tag(peer_as, "remote AS")
-                            peer_as_tag.implied_by(peering_tag, self.lineNum)
-                            peer_as_tag.implies(taglib.as_number_tag(peer_as), self.lineNum)
+                            peer_as_tag.implies(taglib.as_number_tag(peer_as), peer_as_lineNum)
+                            
+                            if peer_as == local_as:
+                                peering_relationship = "iBGP"
+                            else:
+                                peering_relationship = "eBGP"
+
+                            peering_tag = taglib.tag("%s peering" % peering_relationship,
+                                                     "%s %s" % (device_tag.name, peer),
+                                                     sort_name="%s %s" % (device_tag.name, peer_tag.sort_name))
+                            peering_tag.implies(protocol_tag, peer_lineNum)
+                            peering_tag.implied_by(device_tag, peer_lineNum)
+                            local_as_tag.implied_by(peering_tag, peer_lineNum)
+                            peer_as_tag.implied_by(peering_tag, peer_lineNum)
+                            peer_tag.implied_by(peering_tag, peer_lineNum)
                             
                         self.skipTo(EndOfCommand)
                         
