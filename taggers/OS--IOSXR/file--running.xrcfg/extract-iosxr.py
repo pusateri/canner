@@ -37,7 +37,9 @@ ssidLineDict = {}
 ssidsForInterface = {}
 ipv6_general_prefixes = {}
 bgp_group_remote_as = {}
+bgp_group_remote_as_lineNum = {}
 bgp_group_local_as = {}
+bgp_group_local_as_lineNum = {}
 device_tag = taglib.env_tags.device
 
 class UnexpectedToken(Exception):
@@ -291,18 +293,12 @@ class TagsFormatter(Formatter):
                     elif cmd == "neighbor":
                         peer = self.expect(Literal)
                         peer_tag = taglib.ip_address_tag(peer, kind="%s peer" % protocol.upper())
-                        peering_tag = taglib.tag("%s peering" % protocol.upper(),
-                                                 "%s %s" % (device_tag.name, peer),
-                                                 sort_name="%s %s" % (device_tag.name, peer_tag.sort_name))
-                        peering_tag.implies(protocol_tag, self.lineNum)
-                        peering_tag.implied_by(device_tag, self.lineNum)
-
+                        peer_lineNum = self.lineNum
                         address_tag = taglib.ip_address_tag(peer)
                         peer_tag.implies(address_tag, self.lineNum)
-                        peer_tag.implied_by(peering_tag, self.lineNum)
                         
                         self.expect(EndOfCommand)
-                        self.bgp_neighbor(peering_tag, local_as_tag, local_as_lineNum)
+                        self.bgp_neighbor(protocol_tag, peer, peer_tag, peer_lineNum, local_as, local_as_tag, local_as_lineNum)
                         
                     else:
                         self.skipTo(EndOfCommand)
@@ -312,19 +308,27 @@ class TagsFormatter(Formatter):
                     
         self.skipTo(EndOfCommand)
     
-    def bgp_neighbor(self, peering_tag, top_local_as_tag, top_local_as_lineNum):
-        local_as = None
+    def bgp_neighbor(self, protocol_tag, peer, peer_tag, peer_lineNum, top_local_as, top_local_as_tag, top_local_as_lineNum):
+        local_as = top_local_as
+        local_as_tag = top_local_as_tag
+        local_as_lineNum = top_local_as_lineNum
+        
         while True:
         
             if self.accept(Token.EndOfMode) is not None:
-                if local_as is not None:
-                    local_as_tag = taglib.as_number_tag(local_as, "local AS")
-                    local_as_tag.implies(taglib.as_number_tag(local_as), local_as_lineNum)
+                if peer_as == local_as:
+                    peering_relationship = "iBGP"
                 else:
-                    local_as_tag = top_local_as_tag
-                    local_as_lineNum = top_local_as_lineNum
-                    
-                local_as_tag.implied_by(peering_tag, local_as_lineNum)
+                    peering_relationship = "eBGP"
+                
+                peering_tag = taglib.tag("%s peering" % peering_relationship,
+                                         "%s %s" % (device_tag.name, peer),
+                                         sort_name="%s %s" % (device_tag.name, peer_tag.sort_name))
+                peering_tag.implies(protocol_tag, peer_lineNum)
+                peering_tag.implied_by(device_tag, peer_lineNum)
+                local_as_tag.implied_by(peering_tag, peer_lineNum)
+                peer_as_tag.implied_by(peering_tag, peer_lineNum)
+                peer_tag.implied_by(peering_tag, peer_lineNum)
                 return
 
             if self.accept(Whitespace) is not None:
@@ -347,24 +351,35 @@ class TagsFormatter(Formatter):
                 elif cmd == "local-as":
                     local_as = self.expect(Literal)
                     local_as_lineNum = self.lineNum
+                    local_as_tag = taglib.as_number_tag(local_as, "local AS")
+                    local_as_tag.implies(taglib.as_number_tag(local_as), local_as_lineNum)
                     self.expect(EndOfCommand)
                     
                 elif cmd == "remote-as":
                     peer_as = self.expect(Literal)
+                    peer_as_lineNum = self.lineNum
                     peer_as_tag = taglib.as_number_tag(peer_as, "remote AS")
-                    peer_as_tag.implied_by(peering_tag, self.lineNum)
-                    peer_as_tag.implies(taglib.as_number_tag(peer_as), self.lineNum)
+                    peer_as_tag.implies(taglib.as_number_tag(peer_as), peer_as_lineNum)
                     self.expect(EndOfCommand)
                     
                 elif cmd == "use":
                     subcmd = self.expect(Keyword)
                     if subcmd == "neighbor-group":
                         group = self.expect(Literal)
-                        peer_as = bgp_group_remote_as.get(group, None)
-                        local_as = bgp_group_local_as.get(group, None)
-                        peer_as_tag = taglib.as_number_tag(peer_as, "remote AS")
-                        peer_as_tag.implied_by(peering_tag, self.lineNum)
-                        peer_as_tag.implies(taglib.as_number_tag(peer_as), self.lineNum)
+                        group_local_as = bgp_group_local_as.get(group, None)
+                        if group_local_as is not None:
+                            local_as = group_local_as
+                            local_as_lineNum = bgp_group_local_as_lineNum.get(group, None)
+                            local_as_tag = taglib.as_number_tag(local_as, "local AS")
+                            local_as_tag.implies(taglib.as_number_tag(local_as), local_as_lineNum)
+                        
+                        group_peer_as = bgp_group_remote_as.get(group, None)
+                        if group_peer_as is not None:
+                            peer_as = group_peer_as
+                            peer_as_lineNum = bgp_group_remote_as_lineNum.get(group, None)
+                            peer_as_tag = taglib.as_number_tag(peer_as, "remote AS")
+                            peer_as_tag.implies(taglib.as_number_tag(peer_as), peer_as_lineNum)
+                        
                     self.skipTo(EndOfCommand)
                     
                 else:
@@ -372,7 +387,7 @@ class TagsFormatter(Formatter):
 
             except UnexpectedToken:
                 self.skipTo(EndOfCommand)
-                
+                                
     
     def bgp_neighbor_group(self, group):
         self.expect(EndOfCommand)
@@ -400,10 +415,12 @@ class TagsFormatter(Formatter):
 
                 elif cmd == "local-as":
                     bgp_group_local_as[group] = self.expect(Literal)
+                    bgp_group_local_as_lineNum[group] = self.lineNum
                     self.expect(EndOfCommand)
                     
                 elif cmd == "remote-as":
                     bgp_group_remote_as[group] = self.expect(Literal)
+                    bgp_group_remote_as_lineNum[group] = self.lineNum
                     self.expect(EndOfCommand)
                     
                 else:
