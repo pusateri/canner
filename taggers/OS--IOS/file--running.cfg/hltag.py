@@ -35,6 +35,8 @@ EndOfCommand = Token.EndOfCommand
 ssidDict = {}
 ssidLineDict = {}
 ssidsForInterface = {}
+if_addrs = {}
+peer_groups = {}
 ipv6_general_prefixes = {}
 device_tag = taglib.env_tags.device
 ipv6_addresses = False
@@ -291,7 +293,7 @@ class TagsFormatter(Formatter):
                     self.expect(EndOfCommand)
 
                 elif cmd == "ip":
-                    self.ip(if_tag=if_tag, version="IPv4")
+                    self.ip(if_tag=if_tag, if_name=name, version="IPv4")
 
                 elif cmd == "ipv6":
                     ra_list.append(self.ip(if_tag=if_tag, version="IPv6"))
@@ -300,7 +302,10 @@ class TagsFormatter(Formatter):
                     if m and not m.group(2):
                         ssidsForInterface[m.group(1)].append(self.expect(Literal))
                     self.expect(EndOfCommand)
-                        
+                
+                elif cmd == "tunnel":
+                    self.skipTo(EndOfCommand)
+                    
                 else:
                     self.skipTo(EndOfCommand)
 
@@ -323,6 +328,7 @@ class TagsFormatter(Formatter):
         protocol_tag.implied_by(taglib.env_tags.device, self.lineNum)
         
         if protocol == "bgp":
+            router_id = None
             local_as = self.expect(Literal)
             local_as_tag = taglib.as_number_tag(local_as, "local AS")
             local_as_lineNum = self.lineNum
@@ -330,7 +336,8 @@ class TagsFormatter(Formatter):
             
             self.skipTo(EndOfCommand)
             while True:
-            
+                disable = False
+                
                 if self.accept(Whitespace) is None:
                     return
 
@@ -340,19 +347,23 @@ class TagsFormatter(Formatter):
                 
                 try:
                     op = self.accept(Operator)
-                    if op:
-                        pass
+                    if op and op == "no":
+                        disable = True
                         
                     cmd = self.expect(Keyword)
 
-                    if False:
-                        pass
-
-                    elif cmd == "neighbor":
-                        peer = self.expect(Literal)
-                        
+                    if cmd == "neighbor":
+                        peer_group = None
+                        peer = self.accept(Number)
+                        if peer is None:
+                            peer_group = self.expect(String)
+                            peer_group_dict = peer_groups[peer_group]
+                            if peer_group_dict is None:
+                                peer_group_dict = {}
+                                peer_groups[peeg_group] = peer_group_dict
+                            
                         subcmd = self.expect(Keyword)
-                        if subcmd == "remote-as":
+                        if peer is not None and subcmd == "remote-as":
                             peer_tag = taglib.ip_address_tag(peer, kind="%s peer" % protocol.upper())
                             peer_lineNum = self.lineNum
                             address_tag = taglib.ip_address_tag(peer)
@@ -375,12 +386,39 @@ class TagsFormatter(Formatter):
                             peering_tag.implied_by(device_tag, peer_lineNum)
                             local_as_tag.implied_by(peering_tag, peer_lineNum)
                             peer_as_tag.implied_by(peering_tag, peer_lineNum)
-                            peer_tag.implied_by(peering_tag, peer_lineNum)
                             
-                        self.skipTo(EndOfCommand)
-                        
-                    else:
-                        self.skipTo(EndOfCommand)
+                            if router_id is not None:
+                                peer2_tag = taglib.ip_address_tag(router_id, kind="%s peer" % protocol.upper())
+                                address2_tag = taglib.ip_address_tag(router_id)
+                                peer2_tag.implies(address2_tag, router_id_lineNum)
+                                local_peer_tag = taglib.ip_address_tag(router_id, kind="local %s peer" % protocol.upper())
+                                local_peer_tag.implied_by(peering_tag, router_id_lineNum)
+                                local_peer_tag.implies(peer2_tag, router_id_lineNum)
+                                
+                            remote_peer_tag = taglib.ip_address_tag(peer, kind="remote %s peer" % protocol.upper())
+                            remote_peer_tag.implied_by(peering_tag, peer_lineNum)
+                            remote_peer_tag.implies(peer_tag, peer_lineNum)
+                            
+                        elif subcmd == "peer-group":
+                            self.skipTo(EndOfCommand)
+                            
+                        elif subcmd == "update-source":
+                            update_source = self.expect(Literal)
+                            
+                    
+                    elif cmd == "bgp":
+                        subcmd = self.expect(Keyword)
+                        if subcmd == "router-id":
+                            router_id = self.accept(Literal)
+                            router_id_lineNum = self.lineNum
+                        else:
+                            self.skipTo(EndOfCommand)
+                    
+                    elif cmd == "router-id":
+                        router_id = self.accept(Literal)
+                        router_id_lineNum = self.lineNum
+
+                    self.skipTo(EndOfCommand)
 
                 except UnexpectedToken:
                     self.skipTo(EndOfCommand)
@@ -406,7 +444,7 @@ class TagsFormatter(Formatter):
         self.skipTo(EndOfCommand)
 
 
-    def ip(self, if_tag=None, version=None):
+    def ip(self, if_tag=None, if_name=None, version=None):
         ra_line = None
         ra_suppress = False
         ra_prefix = []
@@ -420,6 +458,8 @@ class TagsFormatter(Formatter):
             name = self.accept(String)
             ipaddress = self.accept(Literal)
             if ipaddress:
+                if not if_addrs[if_name]:
+                    if_addrs[if_name] = ipaddress   # save first ipaddress for update-source lookup
                 self.accept(Punctuation)    # allow detection of address/prefix length
                 if name:
                     ipaddress = IPy.intToIp(IPy.IP(ipaddress).int() | ipv6_general_prefixes[name].int(), 6)
@@ -454,7 +494,7 @@ class TagsFormatter(Formatter):
                 cef = version
             t = taglib.tag("Cisco express forwarding", cef)
             t.implied_by(device_tag, self.lineNum)
-            self.expect(EndOfCommand)
+            self.skipTo(EndOfCommand)
         
         elif cmd == 'domain name' or cmd == 'domain-name':
             t = taglib.tag("domain name", self.expect(String))

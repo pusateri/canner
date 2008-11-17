@@ -328,7 +328,10 @@ class TagsFormatter(Formatter):
                 peering_tag.implied_by(device_tag, peer_lineNum)
                 local_as_tag.implied_by(peering_tag, peer_lineNum)
                 peer_as_tag.implied_by(peering_tag, peer_lineNum)
-                peer_tag.implied_by(peering_tag, peer_lineNum)
+                                
+                remote_peer_tag = taglib.ip_address_tag(peer, kind="remote %s peer" % protocol_tag.name)
+                remote_peer_tag.implied_by(peering_tag, peer_lineNum)
+                remote_peer_tag.implies(peer_tag, peer_lineNum)
                 return
 
             if self.accept(Whitespace) is not None:

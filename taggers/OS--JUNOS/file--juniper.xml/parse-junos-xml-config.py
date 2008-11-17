@@ -114,6 +114,7 @@ def tag_protocols(top):
     
     protocol = "BGP"
     routing_options_local_as_list = top.xpath("routing-options/autonomous-system/as-number")
+    routing_options_router_id_list = top.xpath("routing-options/router-id")
     
     protocol_elem_list = top.xpath("protocols/%s" % protocol.lower())
     if protocol_elem_list:
@@ -125,8 +126,12 @@ def tag_protocols(top):
             group_tag = taglib.tag("%s group" % protocol,
                                    "%s %s" % (device_tag.name, name_elem.text))
             group_tag.implied_by(device_tag, name_elem.sourceline)
-            for peer_name_elem in group_elem.xpath("neighbor/name"):                
-                peer_tag = taglib.ip_address_tag(peer_name_elem.text, kind="%s peer" % protocol)
+            for peer_name_elem in group_elem.xpath("neighbor/name"): 
+                local_address_elem_list = peer_name_elem.xpath("ancestor::*/local-address")
+                if local_address_elem_list:
+                    local_address_elem = local_address_elem_list[0]
+                elif routing_options_router_id_list:
+                    local_address_elem = routing_options_router_id_list[0]
                 
                 local_elem_list = peer_name_elem.xpath("ancestor::*/local-as/as-number")
                 if local_elem_list:
@@ -154,18 +159,34 @@ def tag_protocols(top):
                     peering_relationship = "iBGP"
                 else:
                     peering_relationship = "eBGP"
+                
+                address_tag = taglib.ip_address_tag(peer_name_elem.text)
                 peering_tag = taglib.tag("%s peering" % peering_relationship,
-                                         "%s %s" % (device_tag.name, peer_tag.name),
-                                         sort_name="%s %s" % (device_tag.name, peer_tag.sort_name))
+                                         "%s %s" % (device_tag.name, peer_name_elem.text),
+                                         sort_name="%s %s" % (device_tag.name, address_tag.sort_name))
                 peering_tag.implies(protocol_tag, peer_name_elem.sourceline)
                 peering_tag.implied_by(device_tag, peer_name_elem.sourceline)
                 peering_tag.implied_by(group_tag, peer_name_elem.sourceline)
+                
                 asn_tag.implied_by(peering_tag, asn_elem.sourceline)
                 localasn_tag.implied_by(peering_tag, local_elem.sourceline)
 
-                address_tag = taglib.ip_address_tag(peer_name_elem.text)
+                peer_tag = taglib.ip_address_tag(peer_name_elem.text, kind="%s peer" % protocol)
                 peer_tag.implies(address_tag, peer_name_elem.sourceline)
-                peer_tag.implied_by(peering_tag, peer_name_elem.sourceline)
+                
+                if local_address_elem is not None:
+                    peer2_tag = taglib.ip_address_tag(local_address_elem.text, kind="%s peer" % protocol.upper())
+                    address2_tag = taglib.ip_address_tag(local_address_elem.text)
+                    peer2_tag.implies(address2_tag, local_address_elem.sourceline)
+                    local_peer_tag = taglib.ip_address_tag(local_address_elem.text,
+                                                           kind="local %s peer" % protocol)
+                    local_peer_tag.implied_by(peering_tag, local_address_elem.sourceline)
+                    local_peer_tag.implies(peer2_tag, peer_name_elem.sourceline)
+                
+                remote_peer_tag = taglib.ip_address_tag(peer_name_elem.text,
+                                                          kind="remote %s peer" % protocol)
+                remote_peer_tag.implied_by(peering_tag, peer_name_elem.sourceline)
+                remote_peer_tag.implies(peer_tag, peer_name_elem.sourceline)
                 
         
     protocol = "MSDP"
