@@ -15,6 +15,9 @@ Starting Points
    :maxdepth: 1
 
    canner
+   getting-canner
+   using-custom-canner
+   contributing
    devconfig
    tagger-api
 

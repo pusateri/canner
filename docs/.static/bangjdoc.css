@@ -75,6 +75,10 @@ div.sphinxsidebar h6 a {
     color: inherit;
 }
 
+p.logo a img {
+    border: none;
+}
+
 /* :::: MODULE CLOUD :::: */
 
 /* :::: SEARCH :::: */
@@ -99,7 +103,7 @@ div.body h3,
 div.body h4,
 div.body h5,
 div.body h6 {
-    font-family: 'Georgia', 'Times New Roman', Times, serif;
+    font-family: 'Georgia', 'Times New Roman', 'Times', serif;
     font-weight: bold;
     background: transparent;
     color: #753422;
@@ -107,12 +111,13 @@ div.body h6 {
 }
 
 pre {
-    background-color: #faf1d2;
-    color: black;
-    border: 1px solid #67683e;
+    font-family: 'Courier New', monospace;
+    font-size: 90%;
 }
 
 tt {
+    font-family: 'Courier New', monospace;
+    font-size: 100%;
     background-color: transparent;
 }
 

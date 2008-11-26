@@ -1,3 +1,5 @@
+.. _tagger-api:
+
 Tagger Filter API Version 1.0
 =============================
 

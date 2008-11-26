@@ -1,5 +1,11 @@
 {% extends "!layout.html" %}
 
+{%- block sidebarlogo %}
+{%- if logo %}
+<p class="logo"><a href="http://bangj.com"><img class="logo" src="{{ pathto('_static/' + logo, 1) }}" alt="Logo"/></a></p>
+{%- endif %}
+{%- endblock %}
+
 {% block relbar2 %}{% endblock %}
 
 {# vim: set ft=jinja: #}
