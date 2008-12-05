@@ -58,7 +58,8 @@ setup(
                 "canner.personalities",
                 ],
 
-    test_suite = "tests.suite",
+    tests_require = ["nose"],
+    test_suite = "nose.collector",
 
     zip_safe = True,
 
