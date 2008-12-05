@@ -110,9 +110,18 @@ div.body h6 {
     border: none;
 }
 
+div.admonition-todo {
+    -moz-border-radius: 6px;
+    -webkit-border-radius: 6px;
+    border: 3px solid black;
+    background: #ffaaaa;
+}
+
 pre {
     font-family: 'Courier New', monospace;
     font-size: 90%;
+    background: #eeeeee;
+    border: thin solid #cccccc;
 }
 
 tt {

@@ -14,7 +14,7 @@ Starting Points
 .. toctree::
    :maxdepth: 1
 
-   canner
+   overview
    getting-canner
    using-custom-canner
    contributing

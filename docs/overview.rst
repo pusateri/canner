@@ -41,8 +41,8 @@ language, but high level scripting languages such as Python, Ruby, or
 Perl work well. We provide several taggers for you written in Python as
 well as some Python classes you can use to generate tags.
 
-Can
----
+Cans
+----
 
 Each canner snapshot is saved in a directory structure we call a *Can*.
 The package directory uses a .netcan extension for identification and

@@ -3,7 +3,7 @@
 Contributing
 ------------
 
-.. todo: Flesh this out.
+.. todo:: Flesh this out.
 
 To see if we have made changes since you cloned the repository, use::
 
