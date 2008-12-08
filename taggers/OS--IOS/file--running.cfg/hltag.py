@@ -37,6 +37,7 @@ ssidLineDict = {}
 ssidsForInterface = {}
 if_addrs = {}
 peer_groups = {}
+peer_dicts = {}
 ipv6_general_prefixes = {}
 device_tag = taglib.env_tags.device
 ipv6_addresses = False
@@ -339,6 +340,49 @@ class TagsFormatter(Formatter):
                 disable = False
                 
                 if self.accept(Whitespace) is None:
+                    for peerdict in peerdicts:
+                        peer = peerdict["peer"];
+                        peer_lineNum = ["peer_lineNum"]
+                        peer_as = peerdict["peer_as"]
+                        peer_as_lineNum = ["peer_as_lineNum"]
+                        router_id = peerdict["router_id"]
+                        router_id_lineNum = peerdict["router_id_lineNum"]
+                        update_source = peerdict["update_source"]
+                        update_source_lineNum = peerdict["update_source_lineNum"]
+                        
+                        peer_tag = taglib.ip_address_tag(peer, kind="%s peer" % protocol.upper())
+                        
+                        address_tag = taglib.ip_address_tag(peer)
+                        peer_tag.implies(address_tag, peer_lineNum)
+                        
+                        peer_as_tag = taglib.as_number_tag(peer_as, "remote AS")
+                        peer_as_tag.implies(taglib.as_number_tag(peer_as), peer_as_lineNum)
+                        
+                        if peer_as == local_as:
+                            peering_relationship = "iBGP"
+                        else:
+                            peering_relationship = "eBGP"
+
+                        peering_tag = taglib.tag("%s peering" % peering_relationship,
+                                                 "%s %s" % (device_tag.name, peer),
+                                                 sort_name="%s %s" % (device_tag.name, peer_tag.sort_name))
+                        peering_tag.implies(protocol_tag, peer_lineNum)
+                        peering_tag.implied_by(device_tag, peer_lineNum)
+                        local_as_tag.implied_by(peering_tag, peer_lineNum)
+                        peer_as_tag.implied_by(peering_tag, peer_lineNum)
+                        
+                        if router_id is not None:
+                            peer2_tag = taglib.ip_address_tag(router_id, kind="%s peer" % protocol.upper())
+                            address2_tag = taglib.ip_address_tag(router_id)
+                            peer2_tag.implies(address2_tag, router_id_lineNum)
+                            local_peer_tag = taglib.ip_address_tag(router_id, kind="local %s peer" % protocol.upper())
+                            local_peer_tag.implied_by(peering_tag, router_id_lineNum)
+                            local_peer_tag.implies(peer2_tag, router_id_lineNum)
+                            
+                        remote_peer_tag = taglib.ip_address_tag(peer, kind="remote %s peer" % protocol.upper())
+                        remote_peer_tag.implied_by(peering_tag, peer_lineNum)
+                        remote_peer_tag.implies(peer_tag, peer_lineNum)
+
                     return
 
                 if self.accept(Comment) is not None:
@@ -357,66 +401,42 @@ class TagsFormatter(Formatter):
                         peer = self.accept(Number)
                         if peer is None:
                             peer_group = self.expect(String)
-                            peer_group_dict = peer_groups[peer_group]
-                            if peer_group_dict is None:
-                                peer_group_dict = {}
-                                peer_groups[peeg_group] = peer_group_dict
+                            peerdict = peer_groups[peer_group]
+                            if peerdict is None:
+                                peerdict = {}
+                                peer_groups[peeg_group] = peerdict
+                        else:
+                            peerdict = peer_dicts[peer]
+                            if peerdict is None:
+                                peerdict = {}
+                                peer_dicts[peer] = peerdict
+                            peerdict["peer_lineNum"] = self.lineNum
+                            peerdict["disable"] = disable
                             
                         subcmd = self.expect(Keyword)
-                        if peer is not None and subcmd == "remote-as":
-                            peer_tag = taglib.ip_address_tag(peer, kind="%s peer" % protocol.upper())
-                            peer_lineNum = self.lineNum
-                            address_tag = taglib.ip_address_tag(peer)
-                            peer_tag.implies(address_tag, peer_lineNum)
-
-                            peer_as = self.expect(Literal)
-                            peer_as_lineNum = self.lineNum
-                            peer_as_tag = taglib.as_number_tag(peer_as, "remote AS")
-                            peer_as_tag.implies(taglib.as_number_tag(peer_as), peer_as_lineNum)
-                            
-                            if peer_as == local_as:
-                                peering_relationship = "iBGP"
-                            else:
-                                peering_relationship = "eBGP"
-
-                            peering_tag = taglib.tag("%s peering" % peering_relationship,
-                                                     "%s %s" % (device_tag.name, peer),
-                                                     sort_name="%s %s" % (device_tag.name, peer_tag.sort_name))
-                            peering_tag.implies(protocol_tag, peer_lineNum)
-                            peering_tag.implied_by(device_tag, peer_lineNum)
-                            local_as_tag.implied_by(peering_tag, peer_lineNum)
-                            peer_as_tag.implied_by(peering_tag, peer_lineNum)
-                            
-                            if router_id is not None:
-                                peer2_tag = taglib.ip_address_tag(router_id, kind="%s peer" % protocol.upper())
-                                address2_tag = taglib.ip_address_tag(router_id)
-                                peer2_tag.implies(address2_tag, router_id_lineNum)
-                                local_peer_tag = taglib.ip_address_tag(router_id, kind="local %s peer" % protocol.upper())
-                                local_peer_tag.implied_by(peering_tag, router_id_lineNum)
-                                local_peer_tag.implies(peer2_tag, router_id_lineNum)
-                                
-                            remote_peer_tag = taglib.ip_address_tag(peer, kind="remote %s peer" % protocol.upper())
-                            remote_peer_tag.implied_by(peering_tag, peer_lineNum)
-                            remote_peer_tag.implies(peer_tag, peer_lineNum)
+                        if subcmd == "remote-as":
+                            peerdict["peer_as"] = self.expect(Literal)
+                            peerdict["peer_as_lineNum"] = self.lineNum
                             
                         elif subcmd == "peer-group":
                             self.skipTo(EndOfCommand)
                             
                         elif subcmd == "update-source":
-                            update_source = self.expect(Literal)
+                            peerdict["update_source"] = self.expect(Literal)
+                            peerdict["update_source_lineNum"] = self.lineNum
                             
                     
                     elif cmd == "bgp":
                         subcmd = self.expect(Keyword)
                         if subcmd == "router-id":
-                            router_id = self.accept(Literal)
-                            router_id_lineNum = self.lineNum
+                            peerdict["router_id"] = self.accept(Literal)
+                            peerdict["router_id_lineNum"] = self.lineNum
                         else:
                             self.skipTo(EndOfCommand)
                     
                     elif cmd == "router-id":
-                        router_id = self.accept(Literal)
-                        router_id_lineNum = self.lineNum
+                        peerdict["router_id"] = self.accept(Literal)
+                        peerdict["router_id_lineNum"] = self.lineNum
 
                     self.skipTo(EndOfCommand)
 
@@ -458,7 +478,7 @@ class TagsFormatter(Formatter):
             name = self.accept(String)
             ipaddress = self.accept(Literal)
             if ipaddress:
-                if not if_addrs[if_name]:
+                if if_name and if_addrs[if_name] is not None:
                     if_addrs[if_name] = ipaddress   # save first ipaddress for update-source lookup
                 self.accept(Punctuation)    # allow detection of address/prefix length
                 if name:
