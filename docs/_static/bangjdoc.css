@@ -1,0 +1,134 @@
+@import "default.css";
+
+body {
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    background-color: #753422;
+    padding-bottom: 3em;
+}
+
+/* :::: LAYOUT :::: */
+
+div.document {
+    background: transparent;
+    background: url(bg_body.jpg) top center repeat-x;
+    background-color: #fcf7dd;
+    padding-right: 2em;
+    padding-bottom: 2em;
+}
+
+div.body {
+    background: transparent;
+    padding: 100px 20px 30px 20px;
+}
+
+div.footer {
+    background: url(bg_footer.jpg) top center repeat-x;
+    color: #d96d51;
+    font-size: 80%;
+    padding: 10px 0 0 0;
+}
+
+div.footer a, 
+div.footer a:visited {
+    color: #e4b068;
+    text-decoration: none;
+}
+
+div.related {
+    position: fixed;
+    bottom: 0;
+    height: 2em;
+    background-color: #67683e;
+    border-top: thin solid black;
+}
+
+/* ::: TOC :::: */
+div.sphinxsidebar {
+    font-size: 80%;
+}
+
+div.sphinxsidebar h1,
+div.sphinxsidebar h2,
+div.sphinxsidebar h3,
+div.sphinxsidebar h4,
+div.sphinxsidebar h5,
+div.sphinxsidebar h6 {
+    font-family: 'Georgia', 'Times New Roman', Times, serif;
+    color: #753422;
+}
+
+div.sphinxsidebar p {
+    color: black;
+}
+
+div.sphinxsidebar ul {
+    color: black;
+}
+
+div.sphinxsidebar a,
+div.sphinxsidebar h1 a,
+div.sphinxsidebar h2 a,
+div.sphinxsidebar h3 a,
+div.sphinxsidebar h4 a,
+div.sphinxsidebar h5 a,
+div.sphinxsidebar h6 a {
+    color: inherit;
+}
+
+p.logo a img {
+    border: none;
+}
+
+/* :::: MODULE CLOUD :::: */
+
+/* :::: SEARCH :::: */
+
+/* :::: COMMON FORM STYLES :::: */
+
+/* :::: INLINE COMMENTS :::: */
+
+/* :::: SUGGEST CHANGES :::: */
+
+/* :::: PREVIEW :::: */
+
+/* :::: INDEX PAGE :::: */
+
+/* :::: INDEX STYLES :::: */
+
+/* :::: GLOBAL STYLES :::: */
+
+div.body h1,
+div.body h2,
+div.body h3,
+div.body h4,
+div.body h5,
+div.body h6 {
+    font-family: 'Georgia', 'Times New Roman', 'Times', serif;
+    font-weight: bold;
+    background: transparent;
+    color: #753422;
+    border: none;
+}
+
+div.admonition-todo {
+    -moz-border-radius: 6px;
+    -webkit-border-radius: 6px;
+    border: 3px solid black;
+    background: #ffaaaa;
+}
+
+pre {
+    font-family: 'Courier New', monospace;
+    font-size: 90%;
+    background: #eeeeee;
+    border: thin solid #cccccc;
+}
+
+tt {
+    font-family: 'Courier New', monospace;
+    font-size: 100%;
+    background-color: transparent;
+}
+
+/* :::: PRINT :::: */
+

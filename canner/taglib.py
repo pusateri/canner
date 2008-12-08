@@ -26,6 +26,11 @@ import simplejson
 import IPy; IPy.check_addr_prefixlen = False
 
 
+default_filename = os.environ.get("TRIGGER_FILENAME", None)
+known_tags = None
+tagging_log = None
+
+
 class Tag(object):
     def __init__(self, kind=None, name=None, sort_name=None, display_name=None):
         self.kind = kind
@@ -36,12 +41,17 @@ class Tag(object):
         self.changes = dict(never_flushed=True,
                             sort_name=sort_name, 
                             display_name=display_name)
-        
-    def used(self, line=None, filename=None, sort_name=None, display_name=None):
+
+    def update(self, sort_name=None, display_name=None):
+        """update stuff"""
+
         if sort_name:
             self.sort_name = self.changes["sort_name"] = sort_name
         if display_name:
             self.display_name = self.changes["display_name"] = display_name
+        
+    def used(self, line=None, filename=None, sort_name=None, display_name=None):
+        self.update(sort_name=sort_name, display_name=display_name)
         self._flush_changes(line, filename)
         return self
 
@@ -57,10 +67,8 @@ class Tag(object):
         self._flush_changes(line, filename)
         return self
 
-    logging_function = None
-    
     def _flush_changes(self, line, filename):
-        if self.logging_function:
+        if tagging_log:
             entry = dict((k, v) for k, v in self.changes.iteritems() if v)
             if entry:
                 entry["tag"] = self.qname
@@ -75,12 +83,10 @@ class Tag(object):
                     entry["location"] = filename
                 else:
                     raise ValueError("unknown location")
-                self.logging_function(entry)
+                tagging_log.append(entry)
         self.changes = dict()
 
 
-
-_known_tags = dict()
 
 def tag(kind=None, name=None, qname=None, **kw):
     if qname:
@@ -92,12 +98,14 @@ def tag(kind=None, name=None, qname=None, **kw):
             raise ValueError("kind and name must both be specified")
         qname = "%s--%s" % (kind, name)
     try:
-        return _known_tags[qname]
+        t = known_tags[qname]
     except KeyError:
-        t = _known_tags[qname] = Tag(kind, name, **kw)
-        return t
+        t = known_tags[qname] = Tag(kind, name, **kw)
+    else:
+        t.update(**kw)
+    return t
 
-def ip_address_tag(address, kind=None, subnet_also=True, **kw):
+def ip_address_tag(address, kind=None, **kw):
     ip = IPy.IP(address)
     name = ip.strCompressed(wantprefixlen=0)
     if ip.version() == 4:
@@ -131,19 +139,15 @@ def as_number_tag(as_number, kind=None, **kw):
     return tag(kind, as_number, sort_name="%010d" % number)
 
 
-_tagging_log = list()
+class TaggingLog(object):
+    def __init__(self):
+        self._tags = list()
 
-def _add_to_tagging_log(tag_self, entry):
-    _tagging_log.append(entry)
-Tag.logging_function = _add_to_tagging_log    
+    def append(self, entry):
+        self._tags.append(entry)
 
-def output_tagging_log():
-    simplejson.dump(_tagging_log, sys.stdout, indent=2, sort_keys=True)
-    print
-
-
-
-default_filename = os.environ.get("TRIGGER_FILENAME", None)
+    def dump(self, file):
+        simplejson.dump(self._tags, file, indent=2, sort_keys=True)
 
 
 class _EnvironmentTags(object):
@@ -191,6 +195,11 @@ def protocol_name(name):
     return protocol_names.get(name, name)
 
 
+
+def output_tagging_log():
+    tagging_log.dump(sys.stdout)
+    print
+
 def output_kind_of_file(kind, filename=None):
     if not filename:
 	filename = default_filename
@@ -198,3 +207,10 @@ def output_kind_of_file(kind, filename=None):
     file_kind_tag.implies(tag("file", filename), filename=filename)
     output_tagging_log()
 
+
+def reset():
+    global known_tags, tagging_log
+    known_tags = dict()
+    tagging_log = TaggingLog()
+
+reset()

@@ -1,6 +1,7 @@
 ^build/
 ^dist/
 ^Canner.egg-info/
+^docs/.build/
 
 syntax: glob
 *.pyc
