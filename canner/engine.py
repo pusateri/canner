@@ -36,7 +36,6 @@ import simplejson
 import genshi.template.text
 import urllib
 from . import error
-from . import plistlib
 from .session import Session
 
 
@@ -266,7 +265,7 @@ class Engine(object):
                 self.add_file_tagref(name)
 
         self.syntax_highlight_files()
-        self.write_info_plist()
+        self.write_info_file()
 
 
     def add_task(self, task):
@@ -419,13 +418,11 @@ class Engine(object):
         return names[0] if names else None
 
 
-    def write_info_plist(self):
+    def write_info_file(self):
         unreferenced_tags = [k for k, v in self.tagrefs.iteritems() if not v]
         for tag in unreferenced_tags:
             del self.tagrefs[tag]
 
-        ts = datetime.datetime.strptime(self.session_info["timestamp"],
-                                       "%Y-%m-%dT%H:%M:%S")
         user = self.get_tag_name_by_kind("config user")
         log = self.get_tag_name_by_kind("config log")
 
@@ -433,13 +430,10 @@ class Engine(object):
         info["tags"] = self.tagrefs
         info["device"] = self.session_info["device"]
         info["snapshotID"] = self.session_info["id"]
-        info["timestamp"] = ts
+        info["timestamp"] = self.session_info["timestamp"]
         if user: info["user"] = user
         if log: info["log"] = log
 
-        plist = os.path.join("Contents", "Info.plist")
-        plistlib.writePlist(info, plist)
-        
-        info["timestamp"] = self.session_info["timestamp"]
         with open(os.path.join("Contents", "info.json"), "w") as f:
             simplejson.dump(info, f, sort_keys=True, indent=2)
+
