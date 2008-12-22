@@ -86,18 +86,34 @@ class Personality(object):
     def perform_cli_command(self, session, command):
         session.connection.sendline(command)
 
-        output = ""
+        output = []
         patterns = [session.prompt]
         patterns.extend(p[0] for p in self.in_command_interactions)
         while True:
-            index = session.connection.expect(patterns)
-            output += session.connection.before
-            if index == 0:
-                break
+            session.abort_if_timeout_exceeded()
+            prev_len = len(session.connection.buffer)
+            try:
+                index = session.connection.expect(patterns)
+            except pexpect.TIMEOUT:
+                read = len(session.connection.buffer) - prev_len
+                self.logger.debug("Got timeout, read %d", read)
+                # Ignore timeouts as long as some data was read.
+                if not read:
+                    raise
+                # Only keep the last 1K of the buffer to help perfomance
+                # when receiving large files.  This could potentially break
+                # really long patterns.
+                output.append(session.connection.buffer[:-1024])
+                session.connection.buffer = session.connection.buffer[-1024:]
             else:
-                resp = self.in_command_interactions[index - 1][1]
-                if resp:
-                    session.connection.send(resp)
+                output.append(session.connection.before)
+                if index == 0:
+                    break
+                else:
+                    resp = self.in_command_interactions[index - 1][1]
+                    if resp:
+                        session.connection.send(resp)
+        output = ''.join(output)
 
         scrub_echo_pattern = r"(?s)\r?\n?" + re.escape(command) + r"\s*?\n"
         output, number_found = re.subn(scrub_echo_pattern, "", output, 1)

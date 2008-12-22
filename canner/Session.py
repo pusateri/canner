@@ -24,6 +24,7 @@ import os
 import pexpect
 import re
 import sys
+import time
 import pkg_resources
 import operator
 import itertools
@@ -40,7 +41,9 @@ class Session(object):
         self.configure(**kw)
 
         self.connection = None
-        self.timeout = 90
+        self.timeout = 30
+        self.session_timeout = 20 * 60
+        self.abort_time = None
         self.command_cache = dict()
 
         self.candidate_personalities = list()
@@ -57,6 +60,8 @@ class Session(object):
 
         if login_only:
             return
+
+        self.abort_time = time.time() + self.session_timeout
 
         self.prompt = self.perform_command("__determine_prompt__")
         self.update_candidates("___determine_prompt__", self.prompt)
@@ -83,6 +88,8 @@ class Session(object):
         self.os_name = self.personality.os_name
 
     def perform_command(self, command, use_cache=True):
+        self.abort_if_timeout_exceeded()
+
         if use_cache and command in self.command_cache:
             self.logger.info("using cached command '%s'" % command)
             return self.command_cache[command]
@@ -116,6 +123,9 @@ class Session(object):
         if self.connection:
             self.connection.close()
 
+    def abort_if_timeout_exceeded(self):
+        if self.abort_time and self.abort_time < time.time():
+            raise error("Session took too long, aborting")
 
 
     #
@@ -200,8 +210,8 @@ class Session(object):
 
         self.logger.debug("spawning '%s'", command)
         self.connection = pexpect.spawn(command, env=env,
-                                   logfile=self.logfile, 
-                                   timeout=self.timeout)
+                                        logfile=self.logfile, 
+                                        timeout=self.timeout)
         self.connection.delaybeforesend = 0.5
 
 

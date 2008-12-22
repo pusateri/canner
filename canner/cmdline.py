@@ -97,6 +97,7 @@ def add_options(parser):
     parser.add_option('-e', '--exec-password', dest='exec_password', 
                       help='exec PASSWORD')
     parser.add_option("-T", "--timeout", dest="timeout", type="int")
+    parser.add_option("--session-timeout", dest="session_timeout", type="int")
 
     # interfacing with other programs
 
@@ -206,6 +207,8 @@ def create_session(device, options):
                       rc_files=options.rc_files)
     if options.timeout:
         session.timeout = options.timeout
+    if options.session_timeout:
+        session.session_timeout = options.session_timeout
 
     for rcfile in options.oneshot_rc_files:
         os.remove(rcfile)
