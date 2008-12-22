@@ -45,12 +45,12 @@ setup(
     
     provides = ["Canner"],
 
-    install_requires = ["Pygments >=0.9",
-                        "pexpect >=2.1",
-                        "lxml >=1.3, <2a",
-                        "IPy ==0.56",
-                        "simplejson >=1.7",
-                        "Genshi >=0.4",
+    install_requires = ["Pygments>=0.9",
+                        "pexpect>=2.3",
+                        "lxml>=1.3,<2a",
+                        "IPy==0.56",
+                        "simplejson>=1.7",
+                        "Genshi>=0.4",
                         ],
 
     packages = ["canner",
