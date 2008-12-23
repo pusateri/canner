@@ -478,8 +478,8 @@ class TagsFormatter(Formatter):
             name = self.accept(String)
             ipaddress = self.accept(Literal)
             if ipaddress:
-                if if_name and if_addrs[if_name] is not None:
-                    if_addrs[if_name] = ipaddress   # save first ipaddress for update-source lookup
+                if if_name:
+                    if_addrs.setdefault(if_name, ipaddress)
                 self.accept(Punctuation)    # allow detection of address/prefix length
                 if name:
                     ipaddress = IPy.intToIp(IPy.IP(ipaddress).int() | ipv6_general_prefixes[name].int(), 6)
