@@ -161,8 +161,10 @@ class TaggerTask(Task):
         if tagging_error:
             self.engine.logger.error(tagging_error)
             self.engine.add_file(log_filename)
-            self.engine.add_tagref("error--tagger failed", path=log_filename, 
-                    context="snapshot--" + self.engine.session_info["id"])
+            self.engine.add_tagref(
+                "error--tagger failed", 
+                filename=log_filename, 
+                context="snapshot--" + self.engine.session_info["id"])
             return
             
         for entry in tagging_log:
