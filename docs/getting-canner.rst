@@ -65,7 +65,7 @@ To install Canner using a virtual environment,
 
 1. Download the canner-boot.py_ script.
 
-.. _canner-boot.py: http://canner.bangj.com/hg/canner/raw-file/tip/setup.py
+.. _canner-boot.py: http://canner.bangj.com/hg/canner/raw-file/tip/scripts/canner-boot.py
 
 2. Run the script and specify a directory for the virtual environment::
 
