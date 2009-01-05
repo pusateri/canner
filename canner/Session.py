@@ -41,7 +41,7 @@ class Session(object):
         self.configure(**kw)
 
         self.connection = None
-        self.timeout = 30
+        self.timeout = 45
         self.session_timeout = 20 * 60
         self.abort_time = None
         self.command_cache = dict()
