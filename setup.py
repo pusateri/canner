@@ -70,6 +70,7 @@ setup(
 
         "canner.personalities": [
             "bootstrap = canner.personalities.bootstrap:BootstrapPersonality",
+            "catos = canner.personalities.catos:CatOSPersonality",
             "dell = canner.personalities.dell:DellPersonality",
             "extreme_xos = canner.personalities.extreme_xos:ExtremeXOSPersonality",
             "extremeware = canner.personalities.extremeware:ExtremeWarePersonality",
