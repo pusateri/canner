@@ -24,11 +24,13 @@ import pkg_resources
 import re
 from .. import error
 
-class Personality(object):
+ANSI_CODE_RE = r"\x1b\[[0-9;]*?[a-zA-Z]"
 
+class Personality(object):
+    
     in_command_interactions = ()
     scrub_from_output_patterns = (
-        r"\x1b\[[0-9;]*?[a-zA-Z]",
+        ANSI_CODE_RE,
         r"\r",
         r"\x08+(\s+\x08+)?",
         )
@@ -73,10 +75,10 @@ class Personality(object):
         except ValueError:
             last = text
 
-        prompt = r"(?m)^\r?" + re.escape(last)
+        prompt = re.escape(last)
         prompt = re.sub(r"\d+", r"\d+", prompt)
         prompt = re.sub(r"\\([%>])((?:\\\s)?)$", r"[\1#]\2", prompt)
-        prompt = prompt + r"\Z"
+        prompt = r"(?m)^\r?(" + ANSI_CODE_RE + r")*" + prompt + r"\Z"
 
         return prompt
 
