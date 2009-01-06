@@ -39,6 +39,9 @@ class CatOSPersonality(Personality):
 
 
     def setup(self, session):
+        session.prompt = re.sub(r"\\Z$", r"\(enable\)\s?\Z", session.prompt)
+        self.logger.debug("prompt changed to %r", session.prompt)
+
         session.connection.sendline("enable")
         index = session.connection.expect([r"[Pp]assword: ?\Z",
                                            pexpect.TIMEOUT,
