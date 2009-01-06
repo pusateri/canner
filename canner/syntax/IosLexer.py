@@ -571,18 +571,24 @@ class IosLexer(RegexLexer):
             (r'ebgp-multihop(?=\s)', Keyword, 'slurp'),
             (r'next-hop-self(?=\s)', Keyword, 'slurp'),
             (r'password(?=\s)', Keyword, 'slurp'),
-            (r'peer-group(?=\s)', Keyword, 'slurp'),
+            (r'peer-group(?=\s)', Keyword, 'bgp neighbor peer group'),
             (r'remote-as(?=\s)', Keyword, ('slurp', 'litInteger')),
             (r'remove-private-as(?=\s)', Keyword, 'slurp'),
             (r'route-map(?=\s)', Keyword, 'slurp'),
             (r'send-community(?=\s)', Keyword, 'slurp'),
             (r'shutdown(?=\s)', Keyword, 'slurp'),
             (r'soft-reconfiguration(?=\s)', Keyword, 'slurp'),
-            (r'update-source(?=\s)', Keyword, 'slurp'),
+            (r'update-source(?=\s)', Keyword, 'litString'),
             (r'version(?=\s)', Keyword, 'slurp'),
             (r'\S+', Keyword.Pseudo, 'slurp'),
             ],
-                
+             
+        'bgp neighbor peer group': [
+            (r'$', Text, '#pop'),
+            (r'\s', Text),
+            include('litHost'),
+            ],
+
         'ospf': [
             (r'^(?=\S)', Text, '#pop'),
             (r'^\s+', Whitespace),
