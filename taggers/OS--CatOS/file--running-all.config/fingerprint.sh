@@ -21,7 +21,7 @@
 
 cat <<EOF
 [{
-    "tag": "snapshot fingerprint--$(grep -hv '^#time' running-all.cfg | openssl sha1)",
+    "tag": "snapshot fingerprint--$(grep -hv '^#time' running-all.config | openssl sha1)",
     "implied_by": "snapshot--$SESSION_ID"
 }]
 EOF
