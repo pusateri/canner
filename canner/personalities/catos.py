@@ -40,6 +40,7 @@ class CatOSPersonality(Personality):
     def setup(self, session):
         if r"\(enable\)" not in session.prompt:
             self.enter_exec_mode()
+        session.perform_command("set length 0")
 
     def enter_exec_mode(self, session):
         session.prompt = re.sub(r"\\Z$", r"\(enable\)\s?\Z", session.prompt)
