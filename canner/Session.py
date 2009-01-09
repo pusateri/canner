@@ -1,5 +1,5 @@
 #
-# Copyright 2007 !j Incorporated
+# Copyright 2007-2009 !j Incorporated
 #
 # This file is part of Canner.
 #
@@ -64,6 +64,7 @@ class Session(object):
         self.abort_time = time.time() + self.session_timeout
 
         self.prompt = self.perform_command("__determine_prompt__")
+        self.logger.debug("prompt regexp: %r", self.prompt)
         self.update_candidates("___determine_prompt__", self.prompt)
 
         cands = self.candidate_personalities

@@ -1,5 +1,5 @@
 #
-# Copyright 2007 !j Incorporated
+# Copyright 2007-2009 !j Incorporated
 #
 # This file is part of Canner.
 #
@@ -59,7 +59,7 @@ class BootstrapPersonality(Personality):
                 r"(?i)connection refused",
                 r"(?i)Operation timed out",
                 r"(?i)Host key verification failed",
-                r"(?i)[\r\n]+.{1,40}?[%#>$] ?\Z",
+                r"(?i)[\r\n]+.{1,40}?[%#>$] ?(?:\(enable\) ?)?\Z",
                 ]
             index = session.connection.expect(patterns, timeout=timeout)
             capturebuf += session.connection.before

@@ -1,5 +1,5 @@
 #
-# Copyright 2007 !j Incorporated
+# Copyright 2007-2009 !j Incorporated
 #
 # This file is part of Canner.
 #
@@ -37,8 +37,11 @@ class CatOSPersonality(Personality):
         if command == "show version":
             self.examine_with_pattern(output, 0.8, r"Version NmpSW")
 
-
     def setup(self, session):
+        if r"\(enable\)" not in session.prompt:
+            self.enter_exec_mode()
+
+    def enter_exec_mode(self, session):
         session.prompt = re.sub(r"\\Z$", r"\(enable\)\s?\Z", session.prompt)
         self.logger.debug("prompt changed to %r", session.prompt)
 
@@ -59,3 +62,4 @@ class CatOSPersonality(Personality):
                 raise canner.error("Problem sending exec password")
         elif index == 1:
             raise canner.error("Problem entering exec mode")
+
