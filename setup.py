@@ -80,6 +80,7 @@ setup(
             "junos = canner.personalities.junos:JUNOSPersonality",
             "netgear = canner.personalities.netgear:NETGEARPersonality",
             "netscreen = canner.personalities.netscreen:NetscreenPersonality",
+            "netscaler = canner.personalities.netscaler:NetscalerPersonality",
             "posix = canner.personalities.posix:POSIXPersonality",
             "procket = canner.personalities.procket:ProcketPersonality",
             "smc = canner.personalities.smc:SMCPersonality",
