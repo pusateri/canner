@@ -1,5 +1,5 @@
 #
-# Copyright 2007 !j Incorporated
+# Copyright 2007-2009 !j Incorporated
 #
 # This file is part of Canner.
 #
@@ -348,16 +348,17 @@ class Engine(object):
                 content = f.read()
                 
         lexers = set()
-        for syntax in syntaxes:
-            try:
-                lexers.add(pygments.lexers.get_lexer_by_name(syntax, 
-                    stripnl=False))
-            except pygments.util.ClassNotFound:
-                pass
-        if not lexers:
+        if syntaxes:
+            for syntax in syntaxes:
+                try:
+                    lexers.add(pygments.lexers.get_lexer_by_name(
+                        syntax, stripnl=False))
+                except pygments.util.ClassNotFound:
+                    pass
+        else:
             try:
                 lexers.add(pygments.lexers.guess_lexer_for_filename(
-                            filename, content, stripnl=False))
+                    filename, content, stripnl=False))
             except pygments.util.ClassNotFound:
                 pass
         if len(lexers) == 1:
