@@ -1,5 +1,5 @@
 #
-# Copyright 2007 !j Incorporated
+# Copyright 2007-2009 !j Incorporated
 #
 # This file is part of Canner.
 #
@@ -80,7 +80,7 @@ setup(
             "junos = canner.personalities.junos:JUNOSPersonality",
             "netgear = canner.personalities.netgear:NETGEARPersonality",
             "netscreen = canner.personalities.netscreen:NetscreenPersonality",
-            "netscaler = canner.personalities.netscaler:NetscalerPersonality",
+            "netscaler = canner.personalities.netscaler:NetScalerPersonality",
             "posix = canner.personalities.posix:POSIXPersonality",
             "procket = canner.personalities.procket:ProcketPersonality",
             "smc = canner.personalities.smc:SMCPersonality",

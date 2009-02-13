@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Copyright 2007 !j Incorporated
+# Copyright 2009 !j Incorporated
 #
 # This file is part of Canner.
 #

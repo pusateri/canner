@@ -1,5 +1,5 @@
 #
-# Copyright 2008 !j Incorporated
+# Copyright 2009 !j Incorporated
 #
 # This file is part of Canner.
 #
@@ -20,7 +20,7 @@
 from . import Personality
 import re
 
-class NetscalerPersonality(Personality):
+class NetScalerPersonality(Personality):
     
     os_name = "NetScaler"
     commands_to_probe = ("show version", )
