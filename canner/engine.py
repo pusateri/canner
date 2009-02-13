@@ -247,7 +247,7 @@ class Engine(object):
         si = self.session_info = dict()
 
         if self.session:
-            si["id"] = base64.encodestring(uuid.uuid4().bytes)[:-3]
+            si["id"] = base64.urlsafe_b64encode(uuid.uuid4().bytes)[:-2]
             si["timestamp"] = self.timestamp.strftime("%Y-%m-%dT%H:%M:%S")
             si["device"] = self.session.device
             si["user"] = self.session.user
