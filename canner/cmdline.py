@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# Copyright 2007 !j Incorporated
+# Copyright 2007-2009 !j Incorporated
 #
 # This file is part of Canner.
 #
@@ -28,6 +28,7 @@ import logging
 import shlex
 import shutil
 import datetime
+import tarfile
 import traceback
 import subprocess
 from optparse import OptionParser
@@ -64,8 +65,10 @@ def add_options(parser):
     parser.add_option("--norc", dest="use_canner_rc", action="store_false",
                       help="ignore rc files")
     parser.add_option("--rcfile", dest="rc_files", action="append",
+                      metavar='FILE',
                       help="use FILE instead of default rc file")
     parser.add_option("--oneshotrc", dest="oneshot_rc_files", action="append",
+                      metavar='FILE',
                       help="use FILE as an rc file and then delete it")
     parser.set_defaults(use_canner_rc=True, rc_files=[], oneshot_rc_files=[])
 
@@ -79,12 +82,12 @@ def add_options(parser):
     # snapshot file control
 
     parser.add_option("-n", "--name", dest="snapname", action="store",
-                      help="filename to use for the snapshot")
-    parser.add_option('-o', '--organize', dest='organize', action='store_true',
-                      help='automatically orgainze the snapshot')
+                      metavar='NAME', help='name to use for the snapshot')
     parser.add_option("-f", "--force", dest="force", action="store_true",
                       help="overwrite snapshot if one already exists")
-    parser.set_defaults(organize=False, force=False)
+    parser.add_option('-z', '--compress', dest='compress', action='store_true',
+                      help='compress snapshot into a single file')
+    parser.set_defaults(compress=False, force=False)
 
     # session parameters
 
@@ -96,13 +99,18 @@ def add_options(parser):
                       help='login PASSWORD')
     parser.add_option('-e', '--exec-password', dest='exec_password',
                       help='exec PASSWORD')
-    parser.add_option("-T", "--timeout", dest="timeout", type="int")
-    parser.add_option("--session-timeout", dest="session_timeout", type="int")
+    parser.add_option('-T', '--timeout', dest='timeout',
+                      metavar='SECS', type='int')
+    parser.add_option('--session-timeout', dest='session_timeout',
+                      metavar='SECS', type='int')
 
     # interfacing with other programs
 
-    parser.add_option('--on-success', dest='on_success',
-                      help='command to run if canning is successful')
+    parser.add_option('-o', '--organize', dest='organize', action='store_true',
+                      help='automatically orgainze the snapshot')
+    parser.add_option('--on-success', dest='on_success', metavar='CMD',
+                      help='run CMD if a snapshot is succesfully created')
+    parser.set_defaults(organize=False)
 
 
 def process_options(parser, options, args):
@@ -132,6 +140,8 @@ def process_options(parser, options, args):
             paser.error("a snapshot name cannot be specified in interact mode")
         if options.retag:
             paser.error("a snapshot name cannot be specified in retag mode")
+        if not options.snapname.endswith('.netcan'):
+            options.snapname += '.netcan'
 
     if len(args) != 1:
         thing = "snapshot" if options.retag else "device"
@@ -178,8 +188,10 @@ def process_options(parser, options, args):
         if options.snapshots_dir:
             parser.error('snapshots dir invalid when not in organize mode')
 
-    if options.on_success:
-        if options.interact:
+    if options.interact:
+        if options.compress:
+            parser.error("compress cannot be used with interact")
+        if options.on_success:
             parser.error("on-success cannot be used with interact")
 
     return options, args
@@ -216,17 +228,6 @@ def create_session(device, options):
     return session
 
 
-def run_hook(command, pkgdir):
-    args = shlex.split(command)
-    if '{}' in command:
-        for idx, arg in enumerate(args):
-            args[idx] = arg.replace('{}', pkgdir)
-    logging.debug('running hook: %r' % args)
-    retcode = subprocess.call(args)
-    if retcode != 0:
-        logging.error('failed to run hook: %d: %r' % (retcode, args))
-
-
 def interact(options, device):
     session = create_session(device, options)
     session.start(login_only=True)
@@ -238,7 +239,20 @@ def retag(options, pkg):
     starting_dir = os.getcwd()
     pkgdir = os.path.join(starting_dir, pkg)
     if not os.path.isdir(pkgdir):
-        raise error("snapshot directory '%s' not found" % pkgdir)
+        if os.path.isfile(pkgdir) and pkgdir.endswith('.netcan.tar.bz2'):
+            dest_dir = pkgdir[:-8] # strip .tar.bz2
+            check_name_re = re.compile(
+                re.escape(os.path.basename(dest_dir)) + r'(/|$)')
+            tar = tarfile.open(pkgdir, 'r')
+            for name in tar.getnames():
+                if not check_name_re.match(name):
+                    raise error('invalid file in netcan: %r', name)
+            tar.extractall()
+            tar.close()
+            os.remove(pkgdir)
+            pkgdir = pkgdir[:-8] # strip .tar.bz2
+        else:
+            raise error("snapshot directory '%s' not found" % pkgdir)
 
     os.chdir(pkgdir)
     if os.path.exists("Contents"):
@@ -250,9 +264,8 @@ def retag(options, pkg):
     engine = Engine(options.taggers_dir)
     engine.run()
 
-    if options.on_success:
-        os.chdir(starting_dir)
-        run_hook(options.on_success, pkgdir)
+    os.chdir(starting_dir)
+    post_process(options, pkgdir)
 
 
 def can(options, device):
@@ -301,9 +314,29 @@ def can(options, device):
         raise exc_info[0], exc_info[1], exc_info[2]
     else:
         session.close()
-        if options.on_success:
-            os.chdir(starting_dir)
-            run_hook(options.on_success, pkgdir)
+        os.chdir(starting_dir)
+        post_process(options, pkgdir)
+
+
+def post_process(options, pkg_dir):
+    if options.compress:
+        pkg_file = pkg_dir + '.tar.bz2'
+        tar = tarfile.open(pkg_file, 'w:bz2')
+        tar.add(pkg_dir, os.path.basename(pkg_dir))
+        tar.close()
+
+    if options.on_success:
+        args = shlex.split(options.on_success)
+        if '{}' in options.on_success:
+            for idx, arg in enumerate(args):
+                args[idx] = arg.replace('{}', pkg_dir)
+        logging.debug('running hook: %r' % args)
+        retcode = subprocess.call(args)
+        if retcode != 0:
+            logging.error('failed to run hook: %d: %r' % (retcode, args))
+
+    if options.compress:
+        shutil.rmtree(pkg_dir)
 
 
 def log_exception():
