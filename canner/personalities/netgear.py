@@ -22,20 +22,20 @@ import pexpect
 import re
 
 class NETGEARPersonality(Personality):
-    
+
     os_name = "NETGEAR"
     logout_command = "logout"
     in_command_interactions = (
         (r"--More-- or \(q\)uit", " "),
         )
     commands_to_probe = ("show hardware", )
-            
+
     def examine_evidence(self, command, output):
         if command == "__login__":
             self.examine_with_pattern(output, 0.4, r"[FG]SM\d\d\d\d")
 
         elif command == "show hardware":
-            self.examine_with_pattern(output, 0.6, 
+            self.examine_with_pattern(output, 0.6,
                     r"Machine Model.* [FG]SM\d+")
 
         elif command == "show version":
@@ -51,4 +51,4 @@ class NETGEARPersonality(Personality):
             if index == 0: break
             elif index == 1:
                 session.connection.sendline("n")
-            
+

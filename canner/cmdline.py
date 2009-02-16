@@ -51,11 +51,11 @@ def add_options(parser):
 
     # verbosity and logging
 
-    parser.add_option("-q", "--quiet", dest="verbosity", 
+    parser.add_option("-q", "--quiet", dest="verbosity",
                       action="store_const", const=30),
-    parser.add_option("-v", "--verbose", dest="verbosity", 
+    parser.add_option("-v", "--verbose", dest="verbosity",
                       action="store_const", const=10),
-    parser.add_option('-l', '--log', dest='log_session', action='store_true', 
+    parser.add_option('-l', '--log', dest='log_session', action='store_true',
                       help='enable logging')
     parser.set_defaults(verbosity=20, log=False)
 
@@ -94,7 +94,7 @@ def add_options(parser):
                       help='login USER')
     parser.add_option('-p', '--password', dest='password',
                       help='login PASSWORD')
-    parser.add_option('-e', '--exec-password', dest='exec_password', 
+    parser.add_option('-e', '--exec-password', dest='exec_password',
                       help='exec PASSWORD')
     parser.add_option("-T", "--timeout", dest="timeout", type="int")
     parser.add_option("--session-timeout", dest="session_timeout", type="int")
@@ -118,7 +118,7 @@ def process_options(parser, options, args):
     logging.getLogger("").setLevel(options.verbosity)
 
     options.rc_files = [os.path.expanduser(p) for p in options.rc_files]
-    options.oneshot_rc_files = [os.path.expanduser(p) 
+    options.oneshot_rc_files = [os.path.expanduser(p)
                                 for p in options.oneshot_rc_files]
     if options.oneshot_rc_files:
         options.rc_files = options.oneshot_rc_files + options.rc_files
@@ -136,7 +136,7 @@ def process_options(parser, options, args):
     if len(args) != 1:
         thing = "snapshot" if options.retag else "device"
         parser.error("a %s is required" % thing)
-    
+
     if not options.taggers_dir:
         options.taggers_dir = os.environ.get('TAGGERS_DIR', None)
     if not options.taggers_dir:
@@ -164,7 +164,7 @@ def process_options(parser, options, args):
         if not options.snapshots_dir:
             nc = os.path.expanduser('~/Library/Application Support/netCannery')
             if os.path.isdir(nc):
-                options.snapshots_dir = os.path.join(nc, 'Snapshots', 
+                options.snapshots_dir = os.path.join(nc, 'Snapshots',
                                                         'Canned Locally')
                 if not os.path.isdir(options.snapshots_dir):
                     os.makedirs(options.snapshots_dir)
@@ -177,7 +177,7 @@ def process_options(parser, options, args):
     else:
         if options.snapshots_dir:
             parser.error('snapshots dir invalid when not in organize mode')
-    
+
     if options.on_success:
         if options.interact:
             parser.error("on-success cannot be used with interact")
@@ -194,13 +194,13 @@ def start_debug_logging():
         "%(asctime)s %(name)-12s: %(levelname)-8s %(message)s"))
     logging.getLogger("").addHandler(fh)
     logging.getLogger("").setLevel(logging.DEBUG)
-    
+
 
 def create_session(device, options):
-    session = Session(device=device, 
-                      user=options.user, 
-                      password=options.password, 
-                      exec_password=options.exec_password, 
+    session = Session(device=device,
+                      user=options.user,
+                      password=options.password,
+                      exec_password=options.exec_password,
                       command=options.connect_command,
                       should_log=options.log_session,
                       use_rc_files=options.use_canner_rc,
@@ -305,23 +305,23 @@ def can(options, device):
             os.chdir(starting_dir)
             run_hook(options.on_success, pkgdir)
 
-        
+
 def log_exception():
     """
     Log the usual traceback information, followed by a listing of all the
     local variables in each frame.
-    
+
     Inspired by http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/52215
     """
 
     logging.debug(traceback.format_exc())
-    
+
     exc_type, exc_value, exc_traceback = sys.exc_info()
     stack = []
     while exc_traceback:
         stack.append(exc_traceback.tb_frame)
         exc_traceback = exc_traceback.tb_next
-        
+
     buf = []
     buf.append("Locals by frame (most recent call last):")
     for fr in stack:
@@ -329,14 +329,14 @@ def log_exception():
                                                       fr.f_code.co_filename,
                                                       fr.f_lineno))
         for key, value in fr.f_locals.items():
-            try:                   
+            try:
                 buf.append("    %s = %s" % (key, repr(value)))
             except:
                 buf.append("    %s = <ERROR FORMATTING VALUE>" % key)
         buf.append("")
     logging.debug("\n".join(buf[:-1]))
 
-    logging.error("\n".join(traceback.format_exception_only(exc_type, 
+    logging.error("\n".join(traceback.format_exception_only(exc_type,
                                                             exc_value)))
 
 
@@ -344,7 +344,7 @@ def main():
     def force_quit(signum, frame):
         raise error("caught signal %d" % signum)
     signal.signal(signal.SIGTERM, force_quit)
-    
+
     try:
         usage = 'usage: %prog [options] device'
         parser = OptionParser(usage)
@@ -361,15 +361,15 @@ def main():
 
     except SystemExit:
         pass
-        
+
     except KeyboardInterrupt:
         sys.exit(1)
-        
+
     except:
         log_exception()
         sys.exit(1)
 
-            
+
 if __name__ == '__main__':
     main()
 

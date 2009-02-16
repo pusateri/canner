@@ -27,7 +27,7 @@ from .. import error
 ANSI_CODE_RE = r"\x1b\[[0-9;]*?[a-zA-Z]"
 
 class Personality(object):
-    
+
     in_command_interactions = ()
     scrub_from_output_patterns = (
         ANSI_CODE_RE,
@@ -139,7 +139,7 @@ class Personality(object):
 
     def add_confidence(self, measure):
         self.confidence_measures.append(measure)
-        self.confidence = 1.0 - reduce(operator.mul, 
+        self.confidence = 1.0 - reduce(operator.mul,
                 (1.0 - c for c in self.confidence_measures), 1.0)
 
     def examine_with_pattern(self, text, confidence, pattern):

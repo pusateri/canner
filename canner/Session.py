@@ -35,7 +35,7 @@ from collections import defaultdict
 
 class Session(object):
 
-    def __init__(self, **kw): 
+    def __init__(self, **kw):
         self.logger = logging.getLogger("Session")
 
         self.configure(**kw)
@@ -72,7 +72,7 @@ class Session(object):
         # The 25% manditory split is just pulled from thin air.
         while cands[0].confidence < 0.75 \
                 or (cands[0].confidence - cands[1].confidence) < 0.25:
-            probe_commands = [cmd 
+            probe_commands = [cmd
                     for pers in cands
                     for cmd in pers.commands_to_probe
                     if cmd not in self.command_cache]
@@ -81,7 +81,7 @@ class Session(object):
             output = self.perform_command(probe_commands[0])
             self.update_candidates(probe_commands[0], output)
 
-        self.logger.debug("personality %s won", 
+        self.logger.debug("personality %s won",
                 self.personality.__class__.__name__)
 
         self.perform_command("__setup__")
@@ -96,7 +96,7 @@ class Session(object):
             return self.command_cache[command]
 
         self.logger.info("performing command '%s'" % command)
-        self.logger.debug("delegating to '%s'", 
+        self.logger.debug("delegating to '%s'",
                 self.personality.__class__.__name__)
         output = self.personality.perform_command(self, command)
         self.command_cache[command] = output
@@ -136,14 +136,14 @@ class Session(object):
 
     def configure(self,
             device,
-            host=None, 
+            host=None,
             user=None,
-            password=None, 
+            password=None,
             exec_password=None,
-            command=None, 
-            bastion_host=None, 
+            command=None,
+            bastion_host=None,
             bastion_command=None,
-            use_rc_files=True, 
+            use_rc_files=True,
             rc_files=None,
             should_log=False):
 
@@ -211,7 +211,7 @@ class Session(object):
 
         self.logger.debug("spawning '%s'", command)
         self.connection = pexpect.spawn(command, env=env,
-                                        logfile=self.logfile, 
+                                        logfile=self.logfile,
                                         timeout=self.timeout)
         self.connection.delaybeforesend = 0.5
 

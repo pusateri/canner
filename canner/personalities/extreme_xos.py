@@ -36,7 +36,7 @@ class ExtremeXOSPersonality(Personality):
     def examine_evidence(self, command, output):
         if command == "__login__":
             self.examine_with_pattern(output, 0.2, r"ExtremeXOS")
-            self.examine_with_pattern(output, 0.2, 
+            self.examine_with_pattern(output, 0.2,
                                       r"Copyright.*Extreme Networks")
         if command == "show version":
             self.examine_with_pattern(output, 0.8, r"Image.*ExtremeXOS")

@@ -111,7 +111,7 @@ class IosLexer(RegexLexer):
             (r'no(?=\s)', Operator.Word),
             (r'password(?=\s)', Keyword, 'slurp'),
             ],
-            
+
         'aaa group': [
             (r'^\s+', Whitespace),
             (r'\s', Text),
@@ -125,7 +125,7 @@ class IosLexer(RegexLexer):
             (r'\s', Text),
             (r'^(?=\S)', Text, '#pop'),
             ],
-            
+
         'dot11': [
             (r'$', Text, '#pop'),
             (r'\s', Text),
@@ -332,7 +332,7 @@ class IosLexer(RegexLexer):
             (r'\s', Text),
             (r'distributed(?=\s)', Keyword),
             ],
-            
+
         'ip access-group options': [
             (r'\s', Text),
             include('litInteger'),
@@ -347,7 +347,7 @@ class IosLexer(RegexLexer):
             (r'\S+', String),
             (r'\s', Text),
             ],
-            
+
         'acl': [
             (r'$', Text, '#pop'),
             (r'\s', Text),
@@ -393,7 +393,7 @@ class IosLexer(RegexLexer):
             (r'secure-server(?=\s)', Keyword, 'slurp'),
             (r'\S+', Keyword.Pseudo, 'slurp'),
             ],
-            
+
         'ntp': [
             (r'$', Text, '#pop'),
             (r'\s', Text),
@@ -582,7 +582,7 @@ class IosLexer(RegexLexer):
             (r'version(?=\s)', Keyword, 'slurp'),
             (r'\S+', Keyword.Pseudo, 'slurp'),
             ],
-             
+
         'bgp neighbor peer group': [
             (r'$', Text, '#pop'),
             (r'\s', Text),
@@ -694,7 +694,7 @@ class IosLexer(RegexLexer):
             (r'router-preference(?=\s)', Keyword, 'slurp'),
             (r'suppress-ra(?=\s)', Keyword, 'slurp'),
             ],
-            
+
         'ipv6-nd-prefix': [
             (r'$', Text, '#pop'),
             (r'(\s+)(default)(?=\s)', bygroups(Text, Keyword), 'ipv6-nd-prefix-param'),
@@ -713,7 +713,7 @@ class IosLexer(RegexLexer):
             (r'\d+', Number.Integer),
             (r'\S+', Keyword.Pseudo, 'slurp'),
             ],
-           
+
         'snmp-server': [
             (r'$', Text, '#pop'),
             (r'\s', Text),
@@ -764,7 +764,7 @@ class IosLexer(RegexLexer):
             (r'^(?=\S)', Text, '#pop'),
             (r'name(?=\s)', Keyword, 'litString'),
             ],
-            
+
         'slurp': [
             (r'.*$', Text, '#pop'),
             ],
@@ -816,11 +816,11 @@ class IosLexer(RegexLexer):
             include('litV4Address'),
             include('litV6Address'),
             ],
-        
+
         'litV4Address': [
             (r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', Number.Integer, '#pop'),
             ],
-        
+
         'litV6Address': [
             (r'(([\dA-Fa-f]{1,4}\:{1,2})|\:{2,2})([\dA-Fa-f]{1,4}\:{1,2}){0,6}[\dA-Fa-f]{0,4}', Number.Hex, '#pop'),
             ],
@@ -829,7 +829,7 @@ class IosLexer(RegexLexer):
             (r'\s', Text),
             include('litV4Address'),
             ],
-           
+
         'litPrefixLen': [
             (r'\s', Text),
             (r'(/)(\d{1,3})', bygroups(Punctuation, Number.Integer), '#pop'),

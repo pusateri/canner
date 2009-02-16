@@ -21,13 +21,13 @@ from . import Personality
 import re
 
 class DellPersonality(Personality):
-    
+
     os_name = "Dell"
     in_command_interactions = (
         (r"More: <space>,\s+Quit: q,\s+One line: <return> ", " "),
         )
     commands_to_probe = ("show system", )
-            
+
     def examine_evidence(self, command, output):
         if command == "show version":
             self.examine_with_pattern(output, 0.2, r"SW version")

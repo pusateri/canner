@@ -21,13 +21,13 @@ from . import Personality
 import re
 
 class NetscreenPersonality(Personality):
-    
+
     os_name = "ScreenOS"
     commands_to_probe = ("get system", "get config", )
-            
+
     def examine_evidence(self, command, output):
         if command == "__login__":
-            self.examine_with_pattern(output, 0.4, 
+            self.examine_with_pattern(output, 0.4,
                     "\nRemote Management Console\r")
             self.examine_with_pattern(output, 0.4, r"\nns-> \Z")
 

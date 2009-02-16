@@ -39,7 +39,7 @@ class Tag(object):
         self.display_name = display_name
         self.qname = "%s--%s" % (kind, name)
         self.changes = dict(never_flushed=True,
-                            sort_name=sort_name, 
+                            sort_name=sort_name,
                             display_name=display_name)
 
     def update(self, sort_name=None, display_name=None):
@@ -49,7 +49,7 @@ class Tag(object):
             self.sort_name = self.changes["sort_name"] = sort_name
         if display_name:
             self.display_name = self.changes["display_name"] = display_name
-        
+
     def used(self, line=None, filename=None, sort_name=None, display_name=None):
         self.update(sort_name=sort_name, display_name=display_name)
         self._flush_changes(line, filename)
@@ -126,7 +126,7 @@ def ip_subnet_tag(address, kind=None, **kw):
     else:
         if not kind: kind = "IPv6 subnet"
         sort_name = "v6 %032x/%03d" % (ip.int(), ip.prefixlen())
-    return tag(kind, name, sort_name=sort_name, **kw)    
+    return tag(kind, name, sort_name=sort_name, **kw)
 
 def as_number_tag(as_number, kind=None, **kw):
     m = re.match(r'(\d+)[\.\:](\d+)', as_number)
@@ -159,7 +159,7 @@ class _EnvironmentTags(object):
             session_id = os.environ.get("SESSION_ID", "unknown")
             self._snapshot = tag("snapshot", session_id)
             return self._snapshot
-        
+
     @property
     def device(self):
         try:
@@ -168,7 +168,7 @@ class _EnvironmentTags(object):
             session_device = os.environ.get("SESSION_DEVICE", "unknown")
             self._device = tag("device", session_device)
             return self._device
-        
+
     @property
     def trigger(self):
         try:
@@ -186,10 +186,10 @@ env_tags = _EnvironmentTags()
 def protocol_name(name):
     protocol_names = {
         'bgp':'BGP', 'dhcp':'DHCP', 'finger':'FINGER', 'ftp':'FTP',
-        'http':'HTTP', 'https':'HTTPS', 'igmp':'IGMP', 'MLD':'MLD', 
-        'mpls':'MPLS', 'msdp':'MSDP', 'netconf':'NETCONF', 'ospf':'OSPF', 
-        'pim':'PIM', 'rip':'RIP', 'ripng':'RIPng', 'scp':'SCP', 
-        'service-deployment':'SDXD', 'ssh':'SSH', 'telnet':'TELNET', 
+        'http':'HTTP', 'https':'HTTPS', 'igmp':'IGMP', 'MLD':'MLD',
+        'mpls':'MPLS', 'msdp':'MSDP', 'netconf':'NETCONF', 'ospf':'OSPF',
+        'pim':'PIM', 'rip':'RIP', 'ripng':'RIPng', 'scp':'SCP',
+        'service-deployment':'SDXD', 'ssh':'SSH', 'telnet':'TELNET',
         'telnets':'TELNETS', 'xnm-clear-text':'XNM', 'xnm-ssl':'XNMS'
         }
     return protocol_names.get(name, name)

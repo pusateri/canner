@@ -20,13 +20,13 @@
 from . import Personality
 
 class SMCPersonality(Personality):
-    
+
     os_name = "SMC"
     in_command_interactions = (
         (r"---More---", " "),
         )
     commands_to_probe = ("show system", )
-            
+
     def examine_evidence(self, command, output):
         if command == "show system":
             self.examine_with_pattern(output, 0.8, r"System description: SMC ")

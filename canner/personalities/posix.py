@@ -28,7 +28,7 @@ class POSIXPersonality(Personality):
     failed_command_patterns = (
         r"not found",
         )
-        
+
     def examine_evidence(self, command, output):
         if command == "__login__":
             self.examine_with_pattern(output, 0.4, r"\w+BSD|Linux")

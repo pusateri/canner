@@ -98,7 +98,7 @@ class IosXRLexer(RegexLexer):
             (r'no(?=\s)', Operator.Word),
             (r'password(?=\s)', Keyword, 'slurp'),
             ],
-            
+
         'aaa group': [
             (r'^\s+', Whitespace),
             (r'\s', Text),
@@ -133,7 +133,7 @@ class IosXRLexer(RegexLexer):
             (r'\s', Text),
             (r'^(?=\S)', Text, '#pop'),
             ],
-          
+
         'domain': [
             (r'$', Text, '#pop'),
             (r'\s', Text),
@@ -141,7 +141,7 @@ class IosXRLexer(RegexLexer):
             (r'name-server(?=\s)', Keyword, 'litAddress'),
             (r'name(?=\s)', Keyword, 'litBareWord'),
             ],
-             
+
         'flow': [
             (r'^\s+', Whitespace),
             (r'\s', Text),
@@ -170,7 +170,7 @@ class IosXRLexer(RegexLexer):
             (r'exporter(?=\s)', Keyword, 'slurp'),
             (r'record(?=\s)', Keyword, 'slurp'),
             ],
-             
+
         'interface': [
             (r'^\s+', Whitespace),
             (r'\s', Text),
@@ -384,7 +384,7 @@ class IosXRLexer(RegexLexer):
             (r'\S+', String),
             (r'\s', Text),
             ],
-            
+
         'acl': [
             (r'$', Text, '#pop'),
             (r'\s', Text),
@@ -422,7 +422,7 @@ class IosXRLexer(RegexLexer):
             (r'tag(?=\s)', Keyword, 'litInteger'),
             (r'track(?=\s)', Keyword, 'litInteger'),
             ],
-            
+
             # router advertisement is enabled by default on ipv6 multi-access interfaces
             # including Ethernet and SRP
         'ipv6-nd': [
@@ -469,7 +469,7 @@ class IosXRLexer(RegexLexer):
             (r'secure-server(?=\s)', Keyword, 'slurp'),
             (r'\S+', Keyword.Pseudo, 'slurp'),
             ],
-            
+
         'ntp': [
             (r'^\s+', Whitespace),
             (r'\s', Text),
@@ -493,7 +493,7 @@ class IosXRLexer(RegexLexer):
             (r'\s', Text),
             (r'server(?=\s)', Keyword, 'ssh-server'),
             ],
-            
+
         'ssh-server': [
             (r'$', Text, '#pop'),
             (r'\s', Text),
@@ -665,14 +665,14 @@ class IosXRLexer(RegexLexer):
             (r'version(?=\s)', Keyword, 'slurp'),
             (r'(?=\S+)', EndOfMode, '#pop'),
             ],
-            
+
         'use': [
             (r'$', Text, '#pop'),
             (r'\s', Text),
             (r'neighbor-group(?=\s)', Keyword, 'litString'),
             (r'\S+', Keyword.Pseudo, 'slurp'),
             ],
-            
+
         'bgp neighbor group': [
             (r'\s', Text),
             (r'!.*', Comment),
@@ -693,7 +693,7 @@ class IosXRLexer(RegexLexer):
             (r'version(?=\s)', Keyword, 'slurp'),
             (r'(?=\S+)', EndOfMode, '#pop'),
             ],
-                
+
         'ospf': [
             (r'^(?=\S)', Text, '#pop'),
             (r'^\s+', Whitespace),
@@ -778,7 +778,7 @@ class IosXRLexer(RegexLexer):
             (r'update-queue-depth(?=\s)', Keyword, 'slurp'),
             (r'use(?=\s)', Keyword, 'slurp'),
             ],
-            
+
         'msdp': [
             (r'^(?=\S)', Text, '#pop'),
             (r'^\s+', Whitespace),
@@ -796,14 +796,14 @@ class IosXRLexer(RegexLexer):
             (r'sa-filter', Keyword, 'slurp'),
             (r'ttl-threshold', Keyword, 'litInteger'),
             ],
-                
+
         'ospfv3': [
             (r'^(?=\S)', Text, '#pop'),
             (r'^\s+', Whitespace),
             (r'\s', Text),
             (r'!.*', Comment),
             ],
-            
+
         'pim': [
             (r'^(?=\S)', Text, '#pop'),
             (r'^\s+', Whitespace),
@@ -815,20 +815,20 @@ class IosXRLexer(RegexLexer):
             (r'rp-address', Keyword, 'litAddress'),
             (r'interface(?=\s)', Keyword, 'litInterfaceName'),
             ],
-            
+
         'rip': [
             (r'^(?=\S)', Text, '#pop'),
             (r'^\s+', Whitespace),
             (r'\s', Text),
             (r'!.*', Comment),
             ],
-            
+
         'ospf-area': [
             (r'$', Text, '#pop'),
             (r'\s', Text),
             (r'area(?=\s)', Keyword, 'ospfAreaLiteral'),
             ],
-            
+
         'prefix-set': [
             (r'\s', Whitespace),
             (r',', Punctuation),
@@ -848,7 +848,7 @@ class IosXRLexer(RegexLexer):
             (r'ipv4', Keyword),
             (r'ipv6', Keyword),
             ],
-            
+
         'snmp-server': [
             (r'$', Text, '#pop'),
             (r'\s', Text),
@@ -879,7 +879,7 @@ class IosXRLexer(RegexLexer):
         'snmp-server community options': [
             include('litString'),
             ],
-            
+
         'template': [
             (r'^\s+', Whitespace),
             (r'\s', Text),
@@ -898,7 +898,7 @@ class IosXRLexer(RegexLexer):
             (r'password(?=\s)', Keyword, ('slurp', 'litInteger')),
             (r'no(?=\s)', Operator.Word),
             ],
-            
+
         'vlan': [
             (r'$', Text, '#pop'),
             (r'\s', Text),
@@ -912,7 +912,7 @@ class IosXRLexer(RegexLexer):
             (r'^(?=\S)', Text, '#pop'),
             (r'name(?=\s)', Keyword, 'litString'),
             ],
-            
+
         'vrf': [
             (r'^\s+', Whitespace),
             (r'\s', Text),
@@ -921,7 +921,7 @@ class IosXRLexer(RegexLexer):
             (r'address-family(?=\s)', Keyword, 'slurp'),
             (r'no(?=\s)', Operator.Word),
             ],
-            
+
         'slurp': [
             (r'.*$', Text, '#pop'),
             ],
@@ -930,13 +930,13 @@ class IosXRLexer(RegexLexer):
             (r'\s', Text),
             (r'\d+', Number.Integer, '#pop'),
             ],
-            
+
         'as_number': [
             (r'$', Text, '#pop'),
             (r'\s', Text),
             (r'\d+([\.\:]\d+)?', Number.Integer),
             ],
-        
+
         'litBareWord': [
             (r'\s', Text),
             (r'\S+', String, '#pop'),
@@ -980,11 +980,11 @@ class IosXRLexer(RegexLexer):
             include('litV4Address'),
             include('litV6Address'),
             ],
-        
+
         'litV4Address': [
             (r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', Number.Integer, '#pop'),
             ],
-        
+
         'litV6Address': [
             (r'(([\dA-Fa-f]{1,4}\:{1,2})|\:{2,2})([\dA-Fa-f]{1,4}\:{1,2}){0,6}[\dA-Fa-f]{0,4}', Number.Hex, '#pop'),
             ],
@@ -993,7 +993,7 @@ class IosXRLexer(RegexLexer):
             (r'\s', Text),
             include('litV4Address'),
             ],
-           
+
         'litPrefixLen': [
             (r'\s', Text),
             (r'(/)(\d{1,3})', bygroups(Punctuation, Number.Integer), '#pop'),

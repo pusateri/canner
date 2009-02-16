@@ -64,7 +64,7 @@ class DirectoryTask(Task):
             return
         self.already_run = True
 
-        self.engine.logger.debug("loading tag dir '%s'" %  
+        self.engine.logger.debug("loading tag dir '%s'" %
                 self.engine.strip_tag_dir(self.dir))
 
         for name in os.listdir(self.dir):
@@ -118,7 +118,7 @@ class TaggerTask(Task):
 
         tagging_log = None
         tagging_error = None
-        
+
         with open(log_filename, "w") as f:
             print >>f, "===", self.tagger
             print >>f
@@ -157,16 +157,16 @@ class TaggerTask(Task):
                 tagging_error = ("error running tagger '%s':\n%s" %
                                 (tagger_short_name, errors))
                 print >>f, "=== Process failed: return code %d" % p.returncode
-                                
+
         if tagging_error:
             self.engine.logger.error(tagging_error)
             self.engine.add_file(log_filename)
             self.engine.add_tagref(
-                "error--tagger failed", 
-                filename=log_filename, 
+                "error--tagger failed",
+                filename=log_filename,
                 context="snapshot--" + self.engine.session_info["id"])
             return
-            
+
         for entry in tagging_log:
             tag = entry["tag"]
             if tag.startswith("file--"):
@@ -184,11 +184,11 @@ class TaggerTask(Task):
                     properties["displayName"] = entry["display_name"]
                 if "implied_by" in entry:
                     properties["context"] = entry["implied_by"]
-                self.engine.add_tagref(tag, tagger_name, filename, line_num, 
+                self.engine.add_tagref(tag, tagger_name, filename, line_num,
                         properties)
 
                 if "implies" in entry:
-                    self.engine.add_tagref(entry["implies"], tagger_name, 
+                    self.engine.add_tagref(entry["implies"], tagger_name,
                             filename, line_num, context=tag)
 
 
@@ -212,8 +212,8 @@ class CLITask(Task):
             source = f.read().rstrip("\n")
         template = genshi.template.text.TextTemplate(source)
         vars = dict(re=re,
-                trigger=trigger, 
-                trigger_kind=trigger_kind, 
+                trigger=trigger,
+                trigger_kind=trigger_kind,
                 trigger_name=trigger_name)
         command = template.generate(**vars).render()
 
@@ -240,7 +240,7 @@ class Engine(object):
     def run(self):
         self.make_package_structure()
 
-        startup_task = DirectoryTask(self, r"file--sessionInfo$", 
+        startup_task = DirectoryTask(self, r"file--sessionInfo$",
                 self.taggers_dir)
         self.add_task(startup_task)
 
@@ -271,7 +271,7 @@ class Engine(object):
 
 
     def add_task(self, task):
-        self.logger.debug("adding %s triggered by r'%s'" % 
+        self.logger.debug("adding %s triggered by r'%s'" %
                 (type(task).__name__, task.trigger_spec))
         self.tasks.append(task)
         for tag in self.tagrefs.keys():
@@ -291,7 +291,7 @@ class Engine(object):
                           (tag, tagref["filename"], tagref["line"]))
 
         if len(self.tagrefs[tag]) == 1:
-            # This is the first time we've seen the tag.  Notify all 
+            # This is the first time we've seen the tag.  Notify all
             # existing tasks.
             self.logger.debug("notifying tasks about '%s'" % tag)
             for task in list(self.tasks):
@@ -317,7 +317,7 @@ class Engine(object):
 
 
     def log_file_path(self, name):
-        path = os.path.join("Contents", "Logs", 
+        path = os.path.join("Contents", "Logs",
                 "%03d--%s.log" % (self.log_file_number, name))
         self.log_file_number += 1
         return path
@@ -346,7 +346,7 @@ class Engine(object):
     def syntax_highlight_file(self, filename, *syntaxes):
         with open(filename) as f:
                 content = f.read()
-                
+
         lexers = set()
         if syntaxes:
             for syntax in syntaxes:
