@@ -31,6 +31,9 @@ import datetime
 import tarfile
 import traceback
 import subprocess
+import re
+import httplib
+import urlparse
 from optparse import OptionParser
 
 from . import error
@@ -108,6 +111,8 @@ def add_options(parser):
 
     parser.add_option('-o', '--organize', dest='organize', action='store_true',
                       help='automatically orgainze the snapshot')
+    parser.add_option('-U', '--upload', dest='upload', action='store',
+                      metavar='URL', help='upload snapshot to URL')
     parser.add_option('--on-success', dest='on_success', metavar='CMD',
                       help='run CMD if a snapshot is succesfully created')
     parser.set_defaults(organize=False)
@@ -191,8 +196,13 @@ def process_options(parser, options, args):
     if options.interact:
         if options.compress:
             parser.error("compress cannot be used with interact")
+        if options.upload:
+            parser.error("upload cannot be used with interact")
         if options.on_success:
             parser.error("on-success cannot be used with interact")
+
+    if options.upload and not options.compress:
+        parser.error('--upload requires --compress')
 
     return options, args
 
@@ -337,6 +347,53 @@ def post_process(options, pkg_dir):
 
     if options.compress:
         shutil.rmtree(pkg_dir)
+
+    if options.upload:
+        upload_file(options.upload, pkg_file)
+
+
+def upload_file(url, path):
+    logging.info('uploading netcan to %s', url)
+
+    schema, netloc, selector, params, query, fragments = \
+        urlparse.urlparse(url)
+    assert not params and not query and not fragments
+    if schema == 'http':
+        conn = httplib.HTTPConnection(netloc)
+    elif schema == 'https':
+        conn = httplib.HTTPSConnection(netloc)
+    else:
+        raise AssertionError, 'unsupported schema ' + schema
+
+    logging.debug('connected to %s', netloc)
+
+    BOUNDARY = 'HW323829825h4h3XVixcuf343awefVCiu32vC23DSvS233'
+    CRLF = '\r\n'
+
+    buf = []
+    buf.append('--' + BOUNDARY)
+    buf.append('Content-Disposition: form-data; name="%s"; filename="%s"' % (
+        'snapshot', os.path.basename(path)))
+    buf.append('Content-Type: application/octet-stream"')
+    buf.append('Content-Transfer-Encoding: binary')
+    buf.append('')
+    buf.append(open(path, 'rb').read())
+    buf.append('--' + BOUNDARY + '--')
+    buf.append('')
+    body = CRLF.join(buf)
+
+    logging.debug('sending data')
+
+    conn.putrequest('POST', selector)
+    conn.putheader('Content-Type',
+                   'multipart/form-data; boundary="%s"' % BOUNDARY)
+    conn.putheader('Content-Length', str(len(body)))
+    conn.endheaders()
+    conn.send(body)
+    response = conn.getresponse()
+
+    logging.debug('upload completed with status %d', response.status)
+    logging.info(response.read())
 
 
 def log_exception():
