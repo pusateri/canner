@@ -205,6 +205,9 @@ def output_kind_of_file(kind, filename=None):
 	filename = default_filename
     file_kind_tag = tag(kind, filename)
     file_kind_tag.implies(tag("file", filename), filename=filename)
+    file_kind_tag.implied_by(tag("snapshot file",
+                                 "%s %s" % (env_tags.snapshot.name, filename)),
+                             filename=filename)
     output_tagging_log()
 
 

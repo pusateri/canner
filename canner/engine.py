@@ -300,8 +300,21 @@ class Engine(object):
 
     def add_file_tagref(self, filename, content=None):
         self.add_file(filename, content)
-        ctx = "snapshot--" + self.session_info["id"]
-        self.add_tagref("file--" + filename, "canner", filename, context=ctx)
+        uuid = self.session_info['id']
+        snapshot_tag = 'snapshot--%s' % uuid
+        snapshot_file_tag = 'snapshot file--%s %s' % (uuid, filename)
+        file_tag = 'file--%s' % filename
+        timestamp = datetime.datetime.strptime(self.session_info['timestamp'],
+                                               '%Y-%m-%dT%H:%M:%S')
+
+        self.add_tagref(snapshot_file_tag, 'canner', filename,
+                        context=snapshot_tag,
+                        displayName='%s @ %s %s' % (
+                            self.session_info['device'],
+                            timestamp.strftime('%Y-%m-%d %H:%M'),
+                            filename))
+        self.add_tagref(file_tag, 'canner', filename,
+                        context=snapshot_file_tag)
 
 
     def add_file(self, filename, content=None):
