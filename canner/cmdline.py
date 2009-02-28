@@ -112,7 +112,7 @@ def add_options(parser):
     parser.add_option('-o', '--organize', dest='organize', action='store_true',
                       help='automatically orgainze the snapshot')
     parser.add_option('-U', '--upload', dest='upload', action='store',
-                      metavar='URL', help='upload snapshot to URL')
+                      metavar='URL', help='upload snapshot to URL. implies -z')
     parser.add_option('--on-success', dest='on_success', metavar='CMD',
                       help='run CMD if a snapshot is succesfully created')
     parser.set_defaults(organize=False)
@@ -201,8 +201,8 @@ def process_options(parser, options, args):
         if options.on_success:
             parser.error("on-success cannot be used with interact")
 
-    if options.upload and not options.compress:
-        parser.error('--upload requires --compress')
+    if options.upload:
+        options.compress = True
 
     return options, args
 
