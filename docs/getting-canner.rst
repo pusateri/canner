@@ -1,4 +1,3 @@
-.. highlight:: sh
 
 Getting Canner
 ==============
