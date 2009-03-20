@@ -1,4 +1,5 @@
 .. _tagger-api:
+.. role:: samp
 
 Tagger Filter API Version 1.0
 =============================
