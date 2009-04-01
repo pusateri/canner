@@ -68,6 +68,13 @@ def main(filename):
             taglib.tag("domain name", server).implied_by(taglib.env_tags.device, line=n)
             continue
 
+        # tacacs+
+        m = re.match(r'configure tacacs (primary|secondary) server ([\w\d.-]+)( [\d]+)? client-ip ([\w\d.-]+)( vr [\w\d.]+)?', line)
+        if m:
+            which, server, port, client, vr = m.groups()
+            taglib.tag("TACACS+ server", server).implied_by(taglib.env_tags.device, line=n)
+            continue
+
         # interfaces
         m = re.match(r'create vlan "?([\w\d.-]+)"?', line)
         if m:
