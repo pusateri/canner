@@ -66,7 +66,7 @@ class IosXRLexer(RegexLexer):
             (r'route-policy(?=\s)', Keyword, 'slurp'),
             (r'snmp-server(?=\s)', Keyword, 'snmp-server'),
             (r'ssh(?=\s)', Keyword, 'ssh'),
-            (r'tacacs-server(?=\s)', Keyword, 'slurp'),
+            (r'tacacs-server(?=\s)', Keyword, 'tacacs-server'),
             (r'tacacs(?=\s)', Keyword, 'slurp'),
             (r'tcp(?=\s)', Keyword, 'slurp'),
             (r'telnet(?=\s)', Keyword, 'slurp'),
@@ -875,9 +875,18 @@ class IosXRLexer(RegexLexer):
             (r'view(?=\s)', Keyword, 'slurp'),
             (r'\S+', Keyword.Pseudo, 'slurp'),
             ],
-
+            
         'snmp-server community options': [
             include('litString'),
+            ],
+            
+        'tacacs-server': [
+            (r'$', Text, '#pop'),
+            (r'\s', Text),
+            (r'key(?=\s)', Keyword, 'slurp'),
+            (r'host(?=\s)', Keyword, ('slurp', 'litAddress')),
+            (r'timeout(?=\s)', Keyword, 'slurp'),
+            (r'\S+', Keyword.Pseudo, 'slurp'),
             ],
 
         'template': [

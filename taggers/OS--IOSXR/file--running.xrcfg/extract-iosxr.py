@@ -154,6 +154,9 @@ class TagsFormatter(Formatter):
                     
                 elif cmd == "ssh":
                     self.ssh()
+                    
+                elif cmd == "tacacs-server":
+                    self.tacacs_server()
 
                 elif cmd == 'username':
                     t = taglib.tag("user", self.accept(String))
@@ -580,6 +583,17 @@ class TagsFormatter(Formatter):
                     t.implied_by(taglib.env_tags.device, self.lineNum)
                     
         self.skipTo(EndOfCommand)
+
+    def tacacs_server(self):
+        cmd = self.expect(Keyword)
+
+        if cmd == 'host':
+            t = taglib.tag("TACACS+ server", self.expect(Literal))
+            t.implied_by(taglib.env_tags.device, self.lineNum)
+            self.expect(EndOfCommand)
+
+        else:
+            self.skipTo(EndOfCommand)
 
 def main():
     filename = taglib.default_filename

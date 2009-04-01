@@ -159,6 +159,9 @@ class TagsFormatter(Formatter):
                 elif cmd == "snmp-server":
                     self.snmp_server()
 
+                elif cmd == 'tacacs-server':
+                    self.tacacs_server()
+                    
                 elif cmd == 'username':
                     t = taglib.tag("user", self.accept(String))
                     t.implied_by(taglib.env_tags.device, self.lineNum)
@@ -471,6 +474,17 @@ class TagsFormatter(Formatter):
         
         self.skipTo(EndOfCommand)
 
+    def tacacs_server(self):
+        cmd = self.expect(Keyword)
+
+        if cmd == 'host':
+            t = taglib.tag("TACACS+ server", self.expect(Literal))
+            t.implied_by(taglib.env_tags.device, self.lineNum)
+            self.expect(EndOfCommand)
+
+        else:
+            self.skipTo(EndOfCommand)
+
     def ntp(self):
         cmd = self.expect(Keyword)
 
@@ -611,6 +625,7 @@ class TagsFormatter(Formatter):
                     t = taglib.tag("service", "SSHv1")
                     t.implied_by(taglib.env_tags.device, self.lineNum)
             self.skipTo(EndOfCommand)
+
 
         elif cmd == 'unicast-routing':
             ipv6_unicast_routing = self.lineNum

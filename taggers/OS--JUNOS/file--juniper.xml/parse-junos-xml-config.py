@@ -336,6 +336,7 @@ def main():
     tag_matches(top, "system/time-zone", "time zone", context)
     tag_matches(top, "system/name-server/name", "name server", context)
     tag_matches(top, "system/radius-server/name", "RADIUS server", context)
+    tag_matches(top, "system/tacplus-server/name", "TACACS+ server", context)
     tag_matches(top, "system/ntp/boot-server", "NTP boot server", context)
     tag_matches(top, "system/ntp/server/name", "NTP server", context)
     tag_matches(top, "system/login/user/name", "user", context)

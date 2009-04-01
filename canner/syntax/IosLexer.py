@@ -81,7 +81,7 @@ class IosLexer(RegexLexer):
             (r'sntp(?=\s)', Keyword, 'slurp'),
             (r'spanning-tree(?=\s)', Keyword, 'slurp'),
             (r'system(?=\s)', Keyword, 'slurp'),
-            (r'tacacs-server(?=\s)', Keyword, 'slurp'),
+            (r'tacacs-server(?=\s)', Keyword, 'tacacs-server'),
             (r'username(?=\s)', Keyword, 'username'),
             (r'version(?=\s)', Keyword, 'litBareWord'),
             (r'vlan(?=\s)', Keyword, 'vlan'),
@@ -743,6 +743,15 @@ class IosLexer(RegexLexer):
 
         'snmp-server community options': [
             include('litString'),
+            ],
+
+        'tacacs-server': [
+            (r'$', Text, '#pop'),
+            (r'\s', Text),
+            (r'key(?=\s)', Keyword, 'slurp'),
+            (r'host(?=\s)', Keyword, ('slurp', 'litAddress')),
+            (r'timeout(?=\s)', Keyword, 'slurp'),
+            (r'\S+', Keyword.Pseudo, 'slurp'),
             ],
 
         'username': [
