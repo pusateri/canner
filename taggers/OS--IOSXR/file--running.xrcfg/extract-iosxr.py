@@ -139,7 +139,10 @@ class TagsFormatter(Formatter):
 
                 elif cmd == 'interface':
                     self.interface()
-                    
+
+                elif cmd == "multicast_routing":
+                    self.multicast_routing()
+
                 elif cmd == "ntp":
                     self.ntp()
 
@@ -255,12 +258,111 @@ class TagsFormatter(Formatter):
             t.implied_by(taglib.env_tags.device, self.lineNum)
         
         self.skipTo(EndOfCommand)
+
+    def multicast_routing(self):
+        self.skipTo(EndOfCommand)
+        while True:
+        
+            if self.accept(Token.EndOfMode) is not None:
+                return
+
+            if self.accept(Whitespace) is not None:
+                continue
+                
+            if self.accept(Comment) is not None:
+                self.skipTo(EndOfCommand)
+                continue
+            
+            try:
+                op = self.accept(Operator)
+                if op:
+                    pass
+                    
+                cmd = self.expect(Keyword)
+
+                if False:
+                    pass
+
+                elif cmd == "address-family":
+                    self.multicast_routing_address_family(self.expect(Token))
+                    
+                else:
+                    self.skipTo(EndOfCommand)
+
+            except UnexpectedToken:
+                self.skipTo(EndOfCommand)
+
+    def multicast_routing_address_family(self, family):
+        self.skipTo(EndOfCommand)
+        while True:
+        
+            if self.accept(Token.EndOfMode) is not None:
+                return
+
+            if self.accept(Whitespace) is not None:
+                continue
+                
+            if self.accept(Comment) is not None:
+                self.skipTo(EndOfCommand)
+                continue
+            
+            try:
+                op = self.accept(Operator)
+                if op:
+                    pass
+                    
+                cmd = self.expect(Keyword)
+
+                if False:
+                    pass
+
+                elif cmd == "interface":
+                    self.multicast_routing_address_family_interface(self.expect(Literal))
+                    
+                else:
+                    self.skipTo(EndOfCommand)
+
+            except UnexpectedToken:
+                self.skipTo(EndOfCommand)
+
+    def multicast_routing_address_family_interface(self, interface):
+        self.skipTo(EndOfCommand)
+        while True:
+
+            if self.accept(Token.EndOfMode) is not None:
+                return
+
+            if self.accept(Whitespace) is not None:
+                continue
+
+            if self.accept(Comment) is not None:
+                self.skipTo(EndOfCommand)
+                continue
+
+            try:
+                op = self.accept(Operator)
+                if op:
+                    pass
+
+                cmd = self.expect(Keyword)
+
+                if False:
+                    pass
+
+                elif cmd == "enable":
+                    self.skipTo(EndOfCommand)
+
+                else:
+                    self.skipTo(EndOfCommand)
+
+            except UnexpectedToken:
+                self.skipTo(EndOfCommand)
         
     def router(self):
         protocol = self.expect(Keyword)
         protocol_tag = taglib.tag("routing protocol", protocol.upper())
         protocol_tag.implied_by(taglib.env_tags.device, self.lineNum)
-        
+
         if protocol == "bgp":
             local_as = self.expect(Literal)
             local_as_tag = taglib.as_number_tag(local_as, "local AS")
@@ -387,7 +489,10 @@ class TagsFormatter(Formatter):
                             peer_as_tag.implies(taglib.as_number_tag(peer_as), peer_as_lineNum)
                         
                     self.skipTo(EndOfCommand)
-                    
+
+                elif cmd == "address-family":
+                    self.bgp_neighbor_address_family()
+
                 else:
                     self.skipTo(EndOfCommand)
 
@@ -429,6 +534,38 @@ class TagsFormatter(Formatter):
                     bgp_group_remote_as_lineNum[group] = self.lineNum
                     self.expect(EndOfCommand)
                     
+                else:
+                    self.skipTo(EndOfCommand)
+
+            except UnexpectedToken:
+                self.skipTo(EndOfCommand)
+
+    def bgp_neighbor_address_family(self):
+        family = self.expect(Keyword)
+        subfamily = self.expect(Keyword)
+        self.expect(EndOfCommand)
+        while True:
+
+            if self.accept(Token.EndOfMode) is not None:
+                return
+
+            if self.accept(Whitespace) is not None:
+                continue
+
+            if self.accept(Comment) is not None:
+                self.skipTo(EndOfCommand)
+                continue
+
+            try:
+                op = self.accept(Operator)
+                if op:
+                    pass
+
+                cmd = self.expect(Keyword)
+
+                if False:
+                    pass
+
                 else:
                     self.skipTo(EndOfCommand)
 
@@ -590,7 +727,7 @@ class TagsFormatter(Formatter):
         if cmd == 'host':
             t = taglib.tag("TACACS+ server", self.expect(Literal))
             t.implied_by(taglib.env_tags.device, self.lineNum)
-            self.expect(EndOfCommand)
+            self.skipTo(EndOfCommand)
 
         else:
             self.skipTo(EndOfCommand)
