@@ -84,6 +84,7 @@ class TagsFormatter(Formatter):
 
     def getNextToken(self):
         self.tokenType, self.tokenValue = self.tokenSource.next()
+        #print str(self.tokenType) + '--' + str(self.tokenValue)
 
 
     def accept(self, tokenType):
@@ -125,12 +126,25 @@ class TagsFormatter(Formatter):
                 if op == 'no':
                     self.skipTo(EndOfCommand)
                     continue
+
                 cmd = self.expect(Keyword)
                 if False:  # just so all the real options can use elif...
                     pass
 
+                elif cmd == 'aaa':
+                    self.aaa()
+
+                elif cmd == 'control-plane':
+                    self.skipToEndOfMode()
+
+                elif cmd == 'controller':
+                    self.skipToEndOfMode()
+                
                 elif cmd == 'domain':
                     self.domain()
+                
+                elif cmd == 'flow':
+                    self.skipToEndOfMode()
                     
                 elif cmd == 'hostname':
                     t = taglib.tag("hostname", self.accept(String))
@@ -140,7 +154,13 @@ class TagsFormatter(Formatter):
                 elif cmd == 'interface':
                     self.interface()
 
-                elif cmd == "multicast_routing":
+                elif cmd == 'ipv4':
+                    self.skipToEndOfMode()
+
+                elif cmd == 'line':
+                    self.skipToEndOfMode()
+
+                elif cmd == "multicast-routing":
                     self.multicast_routing()
 
                 elif cmd == "ntp":
@@ -164,6 +184,51 @@ class TagsFormatter(Formatter):
                 elif cmd == 'username':
                     t = taglib.tag("user", self.accept(String))
                     t.implied_by(taglib.env_tags.device, self.lineNum)
+                    self.skipToEndOfMode()
+
+                elif cmd == 'vrf':
+                    self.skipToEndOfMode()
+
+                else:
+                    self.skipTo(EndOfCommand)
+
+            except UnexpectedToken:
+                self.skipTo(EndOfCommand)
+
+    def aaa(self):
+        while True:
+
+            if self.accept(Token.EndOfMode) is not None:
+                return
+
+            if self.accept(Whitespace) is not None:
+                continue
+
+            if self.accept(Comment) is not None:
+                self.skipTo(EndOfCommand)
+                continue
+
+            try:
+                op = self.accept(Operator)
+                if op:
+                    pass
+
+                cmd = self.expect(Keyword)
+
+                if False:
+                    pass
+
+                elif cmd == "authentication":
+                    # one liner, not a mode command
+                    self.skipTo(EndOfCommand)
+                    return
+                    
+                elif cmd == "authorization":
+                    # one liner, not a mode command
+                    self.skipTo(EndOfCommand)
+                    return
+                    
+                elif cmd == "group":
                     self.skipTo(EndOfCommand)
 
                 else:
@@ -191,8 +256,11 @@ class TagsFormatter(Formatter):
         self.expect(EndOfCommand)
         while True:
             
-            if self.accept(Whitespace) is None:
+            if self.accept(Token.EndOfMode) is not None:
                 return
+
+            if self.accept(Whitespace) is not None:
+                continue
 
             if self.accept(Comment) is not None:
                 self.skipTo(EndOfCommand)
@@ -259,6 +327,37 @@ class TagsFormatter(Formatter):
         
         self.skipTo(EndOfCommand)
 
+    def skipToEndOfMode(self):
+        self.skipTo(EndOfCommand)
+        while True:
+            if self.accept(Token.EndOfMode) is not None:
+                return
+
+            if self.accept(Whitespace) is not None:
+                continue
+
+            if self.accept(Comment) is not None:
+                self.skipTo(EndOfCommand)
+                continue
+
+            try:
+                op = self.accept(Operator)
+                if op:
+                    pass
+
+                cmd = self.accept(Literal)
+                if not cmd:
+                    cmd = self.expect(Keyword)
+
+                if False:
+                    pass
+
+                else:
+                    self.skipTo(EndOfCommand)
+
+            except UnexpectedToken:
+                self.skipTo(EndOfCommand)
+
     def multicast_routing(self):
         self.skipTo(EndOfCommand)
         while True:
@@ -279,12 +378,11 @@ class TagsFormatter(Formatter):
                     pass
                     
                 cmd = self.expect(Keyword)
-
                 if False:
                     pass
 
                 elif cmd == "address-family":
-                    self.multicast_routing_address_family(self.expect(Token))
+                    self.multicast_routing_address_family(self.expect(Keyword))
                     
                 else:
                     self.skipTo(EndOfCommand)
@@ -312,12 +410,11 @@ class TagsFormatter(Formatter):
                     pass
                     
                 cmd = self.expect(Keyword)
-
                 if False:
                     pass
 
                 elif cmd == "interface":
-                    self.multicast_routing_address_family_interface(self.expect(Literal))
+                    self.multicast_routing_address_family_interface()
                     
                 else:
                     self.skipTo(EndOfCommand)
@@ -325,7 +422,7 @@ class TagsFormatter(Formatter):
             except UnexpectedToken:
                 self.skipTo(EndOfCommand)
 
-    def multicast_routing_address_family_interface(self, interface):
+    def multicast_routing_address_family_interface(self):
         self.skipTo(EndOfCommand)
         while True:
 
@@ -345,7 +442,6 @@ class TagsFormatter(Formatter):
                     pass
 
                 cmd = self.expect(Keyword)
-
                 if False:
                     pass
 
@@ -388,7 +484,6 @@ class TagsFormatter(Formatter):
                         pass
                         
                     cmd = self.expect(Keyword)
-
                     if False:
                         pass
 
@@ -404,14 +499,22 @@ class TagsFormatter(Formatter):
                         
                         self.expect(EndOfCommand)
                         self.bgp_neighbor(protocol_tag, peer, peer_tag, peer_lineNum, local_as, local_as_tag, local_as_lineNum)
-                        
+                    
+                    elif cmd == "vrf":
+                        self.expect(Literal)
+                        self.expect(EndOfCommand)
+    
                     else:
                         self.skipTo(EndOfCommand)
 
                 except UnexpectedToken:
                     self.skipTo(EndOfCommand)
+        elif protocol == "static":
+            self.static()
+
+        else:
+            self.skipToEndOfMode()
                     
-        self.skipTo(EndOfCommand)
     
     def bgp_neighbor(self, protocol_tag, peer, peer_tag, peer_lineNum, top_local_as, top_local_as_tag, top_local_as_lineNum):
         local_as = top_local_as
@@ -452,7 +555,6 @@ class TagsFormatter(Formatter):
                     pass
                     
                 cmd = self.expect(Keyword)
-
                 if False:
                     pass
                 
@@ -492,7 +594,7 @@ class TagsFormatter(Formatter):
 
                 elif cmd == "address-family":
                     self.bgp_neighbor_address_family()
-
+                    
                 else:
                     self.skipTo(EndOfCommand)
 
@@ -571,6 +673,39 @@ class TagsFormatter(Formatter):
 
             except UnexpectedToken:
                 self.skipTo(EndOfCommand)
+                
+    def static(self):
+        self.expect(EndOfCommand)
+        while True:
+
+            if self.accept(Token.EndOfMode) is not None:
+                return
+
+            if self.accept(Whitespace) is not None:
+                continue
+
+            if self.accept(Comment) is not None:
+                self.skipTo(EndOfCommand)
+                continue
+
+            try:
+                op = self.accept(Operator)
+                if op:
+                    pass
+
+                cmd = self.expect(Keyword)
+
+                if False:
+                    pass
+
+                elif cmd == "address-family":
+                    self.skipToEndOfMode()
+                    
+                else:
+                    self.skipTo(EndOfCommand)
+
+            except UnexpectedToken:
+                self.skipTo(EndOfCommand)
         
     def snmp_server(self):
         cmd = self.expect(Keyword)
@@ -586,8 +721,11 @@ class TagsFormatter(Formatter):
         
         while True:
             
-            if self.accept(Whitespace) is None:
+            if self.accept(Token.EndOfMode) is not None:
                 return
+                
+            if self.accept(Whitespace) is not None:
+                continue
 
             if self.accept(Comment) is not None:
                 self.skipTo(EndOfCommand)

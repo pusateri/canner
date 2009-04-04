@@ -92,47 +92,47 @@ class IosXRLexer(RegexLexer):
         'aaa cache': [
             (r'^\s+', Whitespace),
             (r'\s', Text),
-            (r'^(?=\S)', Text, '#pop'),
             (r'all(?=\s)', Keyword),
             (r'cache(?=\s)', Keyword, 'slurp'),
             (r'domain(?=\s)', Keyword, 'slurp'),
             (r'no(?=\s)', Operator.Word),
             (r'password(?=\s)', Keyword, 'slurp'),
+            (r'^(?=\S)', EndOfMode, '#pop'),
             ],
 
         'aaa group': [
             (r'^\s+', Whitespace),
             (r'\s', Text),
-            (r'^(?=\S)', Text, '#pop'),
             (r'server(?=\s)', Keyword, 'slurp'),
             (r'cache(?=\s)', Keyword, 'slurp'),
+            (r'^(?=\S)', EndOfMode, '#pop'),
             ],
 
         'controller': [
             (r'^\s+', Whitespace),
             (r'\s', Text),
-            (r'^(?=\S)', Text, '#pop'),
             (r'!.*', Comment),
             (r'clock(?=\s)', Keyword, 'slurp'),
             (r'rx-los-threshold(?=\s)', Keyword, 'slurp'),
             (r'transmit-power(?=\s)', Keyword, 'slurp'),
             (r'wavelength(?=\s)', Keyword, 'slurp'),
             (r'no(?=\s)', Operator.Word),
+            (r'^(?=\S)', EndOfMode, '#pop'),
             ],
 
         'control-plane': [
             (r'^\s+', Whitespace),
             (r'\s', Text),
-            (r'^(?=\S)', Text, '#pop'),
             (r'!.*', Comment),
             (r'management-plane(?=\s)', Keyword, 'slurp'),
             (r'no(?=\s)', Operator.Word),
+            (r'^(?=\S)', EndOfMode, '#pop'),
             ],
 
         'crypto': [
             (r'^\s+', Whitespace),
             (r'\s', Text),
-            (r'^(?=\S)', Text, '#pop'),
+            (r'^(?=\S)', EndOfMode, '#pop'),
             ],
 
         'domain': [
@@ -146,14 +146,13 @@ class IosXRLexer(RegexLexer):
         'flow': [
             (r'^\s+', Whitespace),
             (r'\s', Text),
-            (r'^(?=\S)', Text, '#pop'),
             (r'!.*', Comment),
             (r'exporter-map(?=\s)', Keyword, ('flow exporter', 'litString')),
             (r'monitor-map(?=\s)', Keyword, ('flow monitor', 'litString')),
+            (r'^(?=\S)', Text, '#pop'),
             ],
 
         'flow exporter': [
-            (r'^(?=\S)', Text, '#pop'),
             (r'^\s+', Whitespace),
             (r'\s', Text),
             (r'!.*', Comment),
@@ -161,21 +160,21 @@ class IosXRLexer(RegexLexer):
             (r'source(?=\s)', Keyword, 'slurp'),
             (r'transport(?=\s)', Keyword, 'slurp'),
             (r'version(?=\s)', Keyword, 'slurp'),
+            (r'^(?=\S)', EndOfMode, '#pop'),
             ],
 
         'flow monitor': [
-            (r'^(?=\S)', Text, '#pop'),
             (r'^\s+', Whitespace),
             (r'\s', Text),
             (r'!.*', Comment),
             (r'exporter(?=\s)', Keyword, 'slurp'),
             (r'record(?=\s)', Keyword, 'slurp'),
+            (r'^(?=\S)', EndOfMode, '#pop'),
             ],
 
         'interface': [
             (r'^\s+', Whitespace),
             (r'\s', Text),
-            (r'^(?=\S)', Text, '#pop'),
             (r'!.*', Comment),
             (r'no(?=\s)', Operator.Word),
             (r'address-family', Keyword, 'slurp'),
@@ -236,22 +235,23 @@ class IosXRLexer(RegexLexer):
             (r'udld(?=\s)', Keyword, 'slurp'),
             (r'vrf(?=\s)', Keyword, 'litString'),
             (r'world-mode(?=\s)', Keyword, 'slurp'),
+            (r'^(?=\S)', EndOfMode, '#pop'),
             ],
 
         'ipv4': [
             (r'^\s+', Whitespace),
             (r'\s', Text),
-            (r'^(?=\S)', Text, '#pop'),
             (r'!.*', Comment),
             (r'access-list(?=\s)', Keyword, ('ipv4 acl', 'litString')),
+            (r'^(?=\S)', EndOfMode, '#pop'),
             ],
 
         'ipv4 acl': [
-            (r'^(?=\S)', Text, '#pop'),
             (r'^\s+', Whitespace),
             (r'\s', Text),
             (r'!.*', Comment),
             (r'\d+', Number.Integer, 'slurp'),
+            (r'(?=\S)', Text, '#pop'),
             ],
 
             # here we combine ip and ipv6 at both the top level and interface level
@@ -483,17 +483,20 @@ class IosXRLexer(RegexLexer):
             ],
 
         'multicast-routing': [
-            (r'^(?=\S)', Text, '#pop'),
             (r'^\s+', Whitespace),
             (r'\s', Text),
             (r'!.*', Comment),
             (r'address-family', Keyword, ('multicast-address-family', 'address-family')),
+            (r'^(?=\S)', EndOfMode, '#pop'),
             ],
             
         'multicast-address-family': [
             (r'\s', Text),
             (r'!.*', Comment),
+            (r'accounting(?=\s)', Keyword, 'slurp'),
             (r'interface(?=\s)', Keyword, ('multicast-address-family-interface', 'litInterfaceName')),
+            (r'oom-handling(?=\s)', Keyword, 'slurp'),
+            (r'rate-per-route(?=\s)', Keyword, 'slurp'),
             (r'(?=\S+)', EndOfMode, '#pop'),
             ],
             
@@ -507,12 +510,12 @@ class IosXRLexer(RegexLexer):
         'ntp': [
             (r'^\s+', Whitespace),
             (r'\s', Text),
-            (r'^(?=\S)', Text, '#pop'),
             (r'!.*', Comment),
             (r'clock-period(?=\s)', Keyword, 'slurp'),
             (r'server(?=\s)', Keyword, 'litAddress'),
             (r'source(?=\s)', Keyword, 'slurp'),
             (r'update-calendar(?=\s)', Keyword, 'slurp'),
+            (r'^(?=\S)', EndOfMode, '#pop'),
             ],
 
         'route-policy': [
@@ -551,7 +554,6 @@ class IosXRLexer(RegexLexer):
         'line': [
             (r'^\s+', Whitespace),
             (r'\s', Text),
-            (r'^(?=\S)', Text, '#pop'),
             (r'access-class(?=\s)', Keyword, 'slurp'),
             (r'accounting(?=\s)', Keyword, 'slurp'),
             (r'authorization(?=\s)', Keyword, 'slurp'),
@@ -601,6 +603,7 @@ class IosXRLexer(RegexLexer):
             (r'txspeed(?=\s)', Keyword, 'slurp'),
             (r'vacant-message(?=\s)', Keyword, 'slurp'),
             (r'width(?=\s)', Keyword, 'slurp'),
+            (r'^(?=\S)', EndOfMode, '#pop'),
             ],
 
         'logging': [
@@ -641,7 +644,6 @@ class IosXRLexer(RegexLexer):
         'router': [
             (r'^\s+', Whitespace),
             (r'\s', Text),
-            (r'^(?=\S)', Text, '#pop'),
             (r'!.*', Comment),
             (r'bgp(?=\s)', Keyword, ('bgp', 'litInteger')),
             (r'isis(?=\s)', Keyword, ('isis', 'litString')),
@@ -650,12 +652,12 @@ class IosXRLexer(RegexLexer):
             (r'ospfv3(?=\s)', Keyword, ('ospfv3', 'litString')),
             (r'pim(?=\s)', Keyword, 'pim'),
             (r'rip(?=\s)', Keyword, 'rip'),
-            (r'static(?=\s)', Keyword, 'slurp'),
+            (r'static(?=\s)', Keyword, 'static'),
             (r'no(?=\s)', Operator.Word),
+            (r'^(?=\S)', Text, '#pop'),
             ],
 
         'bgp': [
-            (r'^(?=\S)', Text, '#pop'),
             (r'^\s+', Whitespace),
             (r'\s', Text),
             (r'!.*', Comment),
@@ -684,13 +686,13 @@ class IosXRLexer(RegexLexer):
             (r'network(?=\s)', Keyword, 'slurp'),
             (r'no(?=\s)', Operator.Word),
             (r'redistribute(?=\s)', Keyword, 'slurp'),
-            (r'router(?=\s)', Keyword, 'slurp'),
             (r'scope(?=\s)', Keyword, 'slurp'),
             (r'synchronization(?=\s)', Keyword, 'slurp'),
             (r'table-map(?=\s)', Keyword, 'slurp'),
             (r'template(?=\s)', Keyword, 'slurp'),
             (r'timers(?=\s)', Keyword, 'slurp'),
             (r'vrf(?=\s)', Keyword, 'litString'),
+            (r'^(?=\S)', EndOfMode, '#pop'),
             ],
 
         'bgp neighbor': [
@@ -765,7 +767,6 @@ class IosXRLexer(RegexLexer):
             ],
 
         'ospf': [
-            (r'^(?=\S)', Text, '#pop'),
             (r'^\s+', Whitespace),
             (r'\s', Text),
             (r'!.*', Comment),
@@ -798,10 +799,10 @@ class IosXRLexer(RegexLexer):
             (r'summary-address(?=\s)', Keyword, 'slurp'),
             (r'timers(?=\s)', Keyword, 'slurp'),
             (r'traffic-share(?=\s)', Keyword, 'slurp'),
+            (r'^(?=\S)', EndOfMode, '#pop'),
             ],
 
         'isis': [
-            (r'^(?=\S)', Text, '#pop'),
             (r'^\s+', Whitespace),
             (r'\s', Text),
             (r'!.*', Comment),
@@ -848,10 +849,10 @@ class IosXRLexer(RegexLexer):
             (r'traffic-share(?=\s)', Keyword, 'slurp'),
             (r'update-queue-depth(?=\s)', Keyword, 'slurp'),
             (r'use(?=\s)', Keyword, 'slurp'),
+            (r'^(?=\S)', EndOfMode, '#pop'),
             ],
 
         'msdp': [
-            (r'^(?=\S)', Text, '#pop'),
             (r'^\s+', Whitespace),
             (r'\s', Text),
             (r'!.*', Comment),
@@ -866,17 +867,17 @@ class IosXRLexer(RegexLexer):
             (r'remote-as', Keyword, 'litInteger'),
             (r'sa-filter', Keyword, 'slurp'),
             (r'ttl-threshold', Keyword, 'litInteger'),
+            (r'^(?=\S)', EndOfMode, '#pop'),
             ],
 
         'ospfv3': [
-            (r'^(?=\S)', Text, '#pop'),
             (r'^\s+', Whitespace),
             (r'\s', Text),
             (r'!.*', Comment),
+            (r'^(?=\S)', EndOfMode, '#pop'),
             ],
 
         'pim': [
-            (r'^(?=\S)', Text, '#pop'),
             (r'^\s+', Whitespace),
             (r'\s', Text),
             (r'!.*', Comment),
@@ -885,13 +886,14 @@ class IosXRLexer(RegexLexer):
             (r'old-register-checksum', Keyword),
             (r'rp-address', Keyword, 'litAddress'),
             (r'interface(?=\s)', Keyword, 'litInterfaceName'),
+            (r'^(?=\S)', EndOfMode, '#pop'),
             ],
 
         'rip': [
-            (r'^(?=\S)', Text, '#pop'),
             (r'^\s+', Whitespace),
             (r'\s', Text),
             (r'!.*', Comment),
+            (r'^(?=\S)', EndOfMode, '#pop'),
             ],
 
         'ospf-area': [
@@ -911,6 +913,24 @@ class IosXRLexer(RegexLexer):
             (r'eq', Keyword),
             (r'ge', Keyword),
             (r'le', Keyword),
+            ],
+
+        'static': [
+            (r'^\s+', Whitespace),
+            (r'\s', Text),
+            (r'!.*', Comment),
+            (r'address-family(?=\s)', Keyword, ('static-address-family', 'address-family-options')),
+            (r'^(?=\S)', EndOfMode, '#pop'),
+            ],
+
+        'static-address-family': [
+            (r'\s', Text),
+            (r'!.*', Comment),
+            (r'/', Punctuation),
+            (r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', Number.Integer),
+            (r'(([\dA-Fa-f]{1,4}\:{1,2})|\:{2,2})([\dA-Fa-f]{1,4}\:{1,2}){0,6}[\dA-Fa-f]{0,4}', Number.Hex),
+            (r'\d{1,3}', Number.Integer, 'slurp'),
+            (r'(?=\S)', EndOfMode, '#pop'),
             ],
 
         'address-family': [
@@ -972,11 +992,11 @@ class IosXRLexer(RegexLexer):
         'username': [
             (r'^\s+', Whitespace),
             (r'\s', Text),
-            (r'^(?=\S)', Text, '#pop'),
             (r'!.*', Comment),
             (r'group(?=\s)', Keyword, 'litBareWord'),
             (r'password(?=\s)', Keyword, ('slurp', 'litInteger')),
             (r'no(?=\s)', Operator.Word),
+            (r'^(?=\S)', EndOfMode, '#pop'),
             ],
 
         'vlan': [
