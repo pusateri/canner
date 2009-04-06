@@ -29,7 +29,7 @@ are of interest to its operators.
 __author__ = "!j Incorporated"
 
 import ez_setup
-ez_setup.use_setuptools("0.6c8")
+ez_setup.use_setuptools("0.6c9")
 
 from setuptools import setup
 
