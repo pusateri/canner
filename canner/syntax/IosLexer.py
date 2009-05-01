@@ -533,9 +533,9 @@ class IosLexer(RegexLexer):
             (r'^\s+', Whitespace),
             (r'\s', Text),
             (r'^(?=\S)', Text, '#pop'),
-            (r'!.*', Comment),
+            
             (r'bgp(?=\s)', Keyword, ('bgp', 'litInteger')),
-            (r'isis(?=\s)', Keyword, ('isis', 'litInteger')),
+            (r'isis(?=\s)', Keyword, ('isis', 'litID')),
             (r'ospf(?=\s)', Keyword, ('ospf', 'litInteger')),
             (r'no(?=\s)', Operator.Word),
             ],
@@ -838,6 +838,11 @@ class IosLexer(RegexLexer):
             (r'\s', Text),
             (r'\S+\s\d{1,2}(/\d+)?', Name.Variable, '#pop'),
             (r'\S+', Name.Variable, '#pop'),
+            ],
+
+        'litID': [
+            include('litInteger'),
+            include('litString'),
             ],
 
         'litHost': [

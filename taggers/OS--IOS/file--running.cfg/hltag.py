@@ -35,7 +35,8 @@ EndOfCommand = Token.EndOfCommand
 ssidDict = {}
 ssidLineDict = {}
 ssidsForInterface = {}
-if_addrs = {}
+if_addrs4 = {}
+if_addrs6 = {}
 peer_groups = {}
 peer_dicts = {}
 ipv6_general_prefixes = {}
@@ -300,7 +301,7 @@ class TagsFormatter(Formatter):
                     self.ip(if_tag=if_tag, if_name=name, version="IPv4")
 
                 elif cmd == "ipv6":
-                    ra_list.append(self.ip(if_tag=if_tag, version="IPv6"))
+                    ra_list.append(self.ip(if_tag=if_tag, if_name=name, version="IPv6"))
                                         
                 elif cmd == "ssid":
                     if m and not m.group(2):
@@ -345,6 +346,8 @@ class TagsFormatter(Formatter):
                 
                 if self.accept(Whitespace) is None:
                     for peer, peerdict in peer_dicts.items():
+                        bgp_local_addr = None
+                        bgp_local_addr_lineNum = None
                         peer_lineNum = peerdict.get("peer_lineNum", None)
                         
                         peer_group = peerdict.get("peer_group", None)
@@ -362,9 +365,28 @@ class TagsFormatter(Formatter):
                             
                         if peer_as is None:
                             continue
-                            
+
                         update_source = peerdict.get("update_source", None)
                         update_source_lineNum = peerdict.get("update_source_lineNum", None)
+                        if update_source is None and peer_group_dict is not None:
+                            update_source = peer_group_dict.get("update_source", None)
+                            update_source_lineNum = peer_group_dict.get("update_source_lineNum", None)
+                            
+                        peer_ip = IPy.IP(peer)
+                        if update_source is None:
+                            if peer_ip.version() == 4 and bgp_router_id:
+                                bgp_local_addr = bgp_router_id
+                                bgp_local_addr_lineNum = bgp_router_id_lineNum
+                            else:
+                                update_source = 'Loopback0'
+                                update_source_lineNum = 0
+                            
+                        if update_source is not None:
+                            bgp_local_addr_lineNum = update_source_lineNum
+                            if peer_ip.version() == 4:
+                                bgp_local_addr = if_addrs4.get(update_source)
+                            elif peer_ip.version() == 6:
+                                bgp_local_addr = if_addrs6.get(update_source)
                         
                         peer_tag = taglib.ip_address_tag(peer, kind="%s peer" % protocol.upper())
                         
@@ -387,13 +409,13 @@ class TagsFormatter(Formatter):
                         local_as_tag.implied_by(peering_tag, peer_lineNum)
                         peer_as_tag.implied_by(peering_tag, peer_lineNum)
                         
-                        if bgp_router_id is not None:
-                            peer2_tag = taglib.ip_address_tag(bgp_router_id, kind="%s peer" % protocol.upper())
-                            address2_tag = taglib.ip_address_tag(bgp_router_id)
-                            peer2_tag.implies(address2_tag, bgp_router_id_lineNum)
-                            local_peer_tag = taglib.ip_address_tag(bgp_router_id, kind="local %s peer" % protocol.upper())
-                            local_peer_tag.implied_by(peering_tag, bgp_router_id_lineNum)
-                            local_peer_tag.implies(peer2_tag, bgp_router_id_lineNum)
+                        if bgp_local_addr is not None:
+                            peer2_tag = taglib.ip_address_tag(bgp_local_addr, kind="%s peer" % protocol.upper())
+                            address2_tag = taglib.ip_address_tag(bgp_local_addr)
+                            peer2_tag.implies(address2_tag, bgp_local_addr_lineNum)
+                            local_peer_tag = taglib.ip_address_tag(bgp_local_addr, kind="local %s peer" % protocol.upper())
+                            local_peer_tag.implied_by(peering_tag, bgp_local_addr_lineNum)
+                            local_peer_tag.implies(peer2_tag, bgp_local_addr_lineNum)
                             
                         remote_peer_tag = taglib.ip_address_tag(peer, kind="remote %s peer" % protocol.upper())
                         remote_peer_tag.implied_by(peering_tag, peer_lineNum)
@@ -418,7 +440,6 @@ class TagsFormatter(Formatter):
                         if peer is None:
                             # if no address, then its probably a peer group
                             peer_group = self.expect(String)
-                            print
                             peerdict = peer_groups.get(peer_group, None)
                             if peerdict is None:
                                 peerdict = {}
@@ -509,12 +530,15 @@ class TagsFormatter(Formatter):
             name = self.accept(String)
             ipaddress = self.accept(Literal)
             if ipaddress:
-                if if_name:
-                    if_addrs.setdefault(if_name, ipaddress)
                 self.accept(Punctuation)    # allow detection of address/prefix length
                 if name:
                     ipaddress = IPy.intToIp(IPy.IP(ipaddress).int() | ipv6_general_prefixes[name].int(), 6)
                 address = ipaddress + "/" + self.expect(Literal)
+                if if_name:
+                    if version == 'IPv4':
+                        if_addrs4.setdefault(if_name, ipaddress)
+                    elif version == 'IPv6':
+                        if_addrs6.setdefault(if_name, ipaddress)
                 ifaddr_tag = taglib.ip_address_tag(address, 
                                                    kind="interface address")
                 address_tag = taglib.ip_address_tag(address)
