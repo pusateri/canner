@@ -26,6 +26,7 @@ class HPProCurvePersonality(Personality):
 
     os_name = "HPProCurve"
     in_command_interactions = (
+        (r"-- MORE --", " "),
         (r"\s*-\Z", " "),
         )
     logout_command = "logout"
@@ -34,10 +35,10 @@ class HPProCurvePersonality(Personality):
         if command == "__login__":
             self.examine_with_pattern(output, 0.8, r"ProCurve ")
 
-    def setup_session(self, session):
-        session.issue_command("page")
-        session.issue_command("terminal length 1000")
-        session.issue_command("terminal width 1920")
+    def setup(self, session):
+        session.perform_command("page")
+        session.perform_command("terminal length 1000")
+        session.perform_command("terminal width 1920")
 
     def logout(self, session):
         session.connection.sendline(self.logout_command)
